@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- Quickbooks Operations Form-->
+        <record id="quickbooks_operations_form_view" model="ir.ui.view">
+            <field name="name">Quickbooks operations form view</field>
+            <field name="model">quickbooks.operations</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <p style="background-color:powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_account'">
+                            <b>Notes: Import Chart of Account Process</b>
+                            <ul>
+                                <br/>
+                                <li>To import Chart of Account From Quickbooks based on invoice IDs, From and To Date</li>
+                            </ul>
+                        </p>
+                        <p style="background-color:powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_customers'">
+                            <b>Notes: Import Customers Process</b>
+                            <ul>
+                                <br/>
+                                <li>
+                                    To Import Customers From Quickbooks
+                                </li>
+                            </ul>
+                        </p>
+                        <p style="background-color:powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_taxes'">
+                            <b>Notes: Import Taxes Process</b>
+                            <ul>
+                                <br/>
+                                <li>
+                                    To Import Taxes From Quickbooks
+                                </li>
+                            </ul>
+                        </p>
+                        <br/>
+                        <group>
+                            <group>
+                                <field name="quickbook_instance_id"/>
+                                <field name="quickbook_operation" widget="radio"/>
+                                <field name="import_operations" widget="radio"/>
+                            </group>
+                            <group>
+                            </group>
+                        </group>
+                        <footer>
+                            <button string="Execute" class="oe_highlight" type="object"
+                                    name="execute_process_of_quickbooks"/>
+                            <button string="Cancel" class="oe_highlight" special="cancel"/>
+                        </footer>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="actions_quickbook_operations" model="ir.actions.act_window">
+            <field name="name">QuickBooks Operations</field>
+            <field name="res_model">quickbooks.operations</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="quickbooks_operations_form_view"/>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>
+
+

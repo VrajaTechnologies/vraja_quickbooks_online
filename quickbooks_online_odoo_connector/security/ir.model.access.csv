@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_quickbooks_connect,access.quickbooks.connect,model_quickbooks_connect,,1,1,1,1
+access_quickbooks_company_vts,access.quickbooks.company.vts,model_quickbooks_company_vts,,1,1,1,1
+access_quickbooks_operations,access.quickbooks.operations,model_quickbooks_operations,,1,1,1,1
+access_qbo_partner_map_vts,access.qbo.partner.map.vts,model_qbo_partner_map_vts,,1,1,1,1
+access_quickbooks_log_vts,access.quickbooks.log.vts,model_quickbooks_log_vts,,1,1,1,1
+access_quickbooks_log_vts_line,access.quickbooks.log.vts.line,model_quickbooks_log_vts_line,,1,1,1,1
