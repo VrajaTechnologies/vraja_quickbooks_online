@@ -28,7 +28,7 @@
                 <field name="quickbook_id" readonly="1"/>
                 <field name="quick_name" readonly="1"/>
                 <field name="partner_id"/>
-                <button  name="partner_mapping_view" type="object" string="View" class="btn btn-link"/>
+                <button name="partner_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
         </field>
     </record>
@@ -40,13 +40,45 @@
         <field name="res_model">qbo.partner.map.vts</field>
         <field name="view_mode">list</field>
     </record>
+    <record id="action_qbo_account" model="ir.actions.act_window">
+        <field name="name">Quickbooks Account</field>
+        <field name="res_model">qbo.account.vts</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_qbo_taxes" model="ir.actions.act_window">
+        <field name="name">Quickbooks Taxes</field>
+        <field name="res_model">qbo.taxes.vts</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_qbo_payment_terms" model="ir.actions.act_window">
+        <field name="name">Quickbooks Payment Terms</field>
+        <field name="res_model">qbo.payment.terms.vts</field>
+        <field name="view_mode">list</field>
+    </record>
+
 
     <!-- Menu item -->
 
     <menuitem id="main_mapping_menu" name="Mapping" parent="quickbooks_online_odoo_connector.menu_quickbooks_root"/>
 
+
     <menuitem id="menu_qbo_partner_map"
               name="Partner Map"
               parent="quickbooks_online_odoo_connector.main_mapping_menu"
               action="action_qbo_partner_map" sequence="1"/>
+
+
+    <menuitem id="menu_qbo_account"
+              name="Account"
+              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              action="action_qbo_account" sequence="1"/>
+
+    <menuitem id="menu_qbo_taxes"
+              name="Taxes"
+              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              action="action_qbo_taxes" sequence="1"/>
+     <menuitem id="menu_qbo_payment_terms"
+              name="Payment Terms"
+              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              action="action_qbo_payment_terms" sequence="1"/>
 </odoo>
