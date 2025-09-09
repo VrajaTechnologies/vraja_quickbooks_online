@@ -9,11 +9,10 @@ class QuickbooksLog(models.Model):
     _order = 'id DESC'
 
     name = fields.Char(string='Name')
-    quickbooks_operation_name = fields.Selection(selection=[('gateway', 'Gateway'),
-                                                         ('customer', 'Customer'),
-                                                         ('account', 'Invoice'),
-                                                         ('payment_term', 'Payment'),
-                                                         ('taxes', 'Order Status')],
+    quickbooks_operation_name = fields.Selection(selection=[('customer', 'Customer'),
+                                                         ('account', 'Account'),
+                                                         ('taxes', 'Taxes'),
+                                                         ('payment_term', 'Payment')],
                                               string="Process Name")
     quickbooks_operation_type = fields.Selection(selection=[('export', 'Export'),('import', 'Import')], string="Process Type")
     company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.user.company_id)
@@ -68,19 +67,13 @@ class QuickbooksLogLine(models.Model):
     _order = 'id DESC'
 
     quickbooks_operation_id = fields.Many2one('quickbooks.log.vts', string='Process')
-    quickbooks_operation_name = fields.Selection(selection=[('gateway', 'Gateway'),
-                                                         ('product', 'Product'),
-                                                         ('location', 'location'),
-                                                         ('customer', 'Customer'),
-                                                         ('product_attribute', 'Product Attribute'),
-                                                         ('product_variant', 'Product Variant'),
-                                                         ('order', 'Order'),
-                                                         ('inventory', 'Inventory')],
+    quickbooks_operation_name = fields.Selection(selection=[('customer', 'Customer'),
+                                                         ('account', 'Account'),
+                                                         ('taxes', 'Taxes'),
+                                                         ('payment_term', 'Payment')],
                                               string="Process Name")
     quickbooks_operation_type = fields.Selection([('export', 'Export'),
-                                               ('import', 'Import'),
-                                               ('update', 'Update'),
-                                               ('delete', 'Cancel / Delete')], string="Process Type")
+                                               ('import', 'Import')], string="Process Type")
     company_id = fields.Many2one("res.company", "Company", default=lambda self: self.env.user.company_id)
     qkb_instance_id = fields.Many2one('quickbooks.connect', string='Instance',
                                   help='Select Instance Id')
@@ -95,7 +88,7 @@ class QuickbooksLogLine(models.Model):
         for vals in vals_list:
             if type(vals) == dict:
                 quickbooks_operation_id = vals.get('quickbooks_operation_id')
-                operation = quickbooks_operation_id and self.env['quickbooks.log.vts'].browse(quickbooks_operation_id) or False
+                operation = quickbooks_operation_id and self.env['quickbooks.log.vts'].browse(quickbooks_operation_id).id or False
                 company_id = operation and operation.company_id.id or self.env.user.company_id.id
                 vals.update({'company_id': company_id})
         return super(QuickbooksLogLine, self).create(vals_list)

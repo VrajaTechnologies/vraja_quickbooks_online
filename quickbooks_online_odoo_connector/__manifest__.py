@@ -8,7 +8,7 @@
     'license': 'OPL-1',
 
     # Dependencies
-    'depends': ["account"],
+    'depends': ["account_accountant"],
 
     # Views
     'data': [
@@ -21,6 +21,7 @@
         'views/qb_payment_terms.xml',
         'views/qb_partner_mapping.xml',
         'views/quickbooks_log.xml',
+        'views/partner_view.xml',
     ],
 
     # Author

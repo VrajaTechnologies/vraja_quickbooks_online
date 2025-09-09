@@ -51,12 +51,8 @@ class QuickbookAuthController(http.Controller):
 
         if tokens.get("access_token") and quickbook_connect.quickbook_base_url:
             qkb_company_obj = request.env['quickbooks.company.vts']
-            qck_url = quickbook_connect.quickbook_base_url
-            endpoint = f"{realm_id}/companyinfo/{realm_id}"
-
-            company_info, cmp_status = request.env['quickbooks.api.vts'].qb_get_request(
-                qck_url, tokens["access_token"], endpoint
-            )
+            company_url = quickbook_connect.quickbook_base_url + f"/{realm_id}/companyinfo/{realm_id}"
+            company_info, cmp_status = request.env['quickbooks.api.vts'].qb_get_request(tokens["access_token"], company_url)
 
             if cmp_status == 200 and company_info:
                 company_data = company_info.get('CompanyInfo', {})

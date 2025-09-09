@@ -7,3 +7,4 @@ from . import qbo_taxes
 from . import qbo_payment_terms
 from . import qbo_partner_map
 from . import quickbooks_log
+from . import res_partner

@@ -8,6 +8,7 @@ class QuickbooksParnterMap(models.Model):
     _description = "Quickbooks Partner Map"
     _rec_name = "partner_id"
 
+    quickbook_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance ID")
     quickbook_id = fields.Char(string="Quickbook ID")
     quick_name = fields.Char(string="Quickbook Name")
     partner_id = fields.Many2one('res.partner',string="Odoo Customer")

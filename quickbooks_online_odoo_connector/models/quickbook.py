@@ -62,6 +62,7 @@ class QuickbooksConnect(models.Model):
 
     def reconnect_quickbook(self):
         self.state = 'connecting'
+        self.access_token = ''
 
     def refresh_access_token(self):
         quick_connects = self if self else self.env['quickbooks.connect'].search([])

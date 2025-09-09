@@ -10,11 +10,19 @@
                 <form>
                     <sheet>
                         <p style="background-color:powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_payment_terms'">
+                            <b>Notes: Import Payment Term Process</b>
+                            <ul>
+                                <br/>
+                                <li>To import Payment Term From Quickbooks</li>
+                            </ul>
+                        </p>
+                        <p style="background-color:powderblue; padding: 10px;"
                            invisible="import_operations != 'import_account'">
                             <b>Notes: Import Chart of Account Process</b>
                             <ul>
                                 <br/>
-                                <li>To import Chart of Account From Quickbooks based on invoice IDs, From and To Date</li>
+                                <li>To import Chart of Account From Quickbooks</li>
                             </ul>
                         </p>
                         <p style="background-color:powderblue; padding: 10px;"
@@ -40,11 +48,14 @@
                         <br/>
                         <group>
                             <group>
-                                <field name="quickbook_instance_id"/>
+                                <field name="quickbook_instance_id" readonly="1"/>
                                 <field name="quickbook_operation" widget="radio"/>
                                 <field name="import_operations" widget="radio"/>
                             </group>
                             <group>
+                                <field name="qk_customer_type" invisible="import_operations != 'import_customers'"/>
+                                <field name="from_date"/>
+                                <field name="to_date"/>
                             </group>
                         </group>
                         <footer>
