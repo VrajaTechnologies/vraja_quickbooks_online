@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 import requests
 import base64
 from odoo.exceptions import UserError
+import urllib.parse
 
 
 class QuickbooksConnect(models.Model):
@@ -25,7 +26,7 @@ class QuickbooksConnect(models.Model):
     company_id = fields.Many2one('res.company',string="Company",default=lambda self: self.env.user.company_id)
 
     def action_quickbook_open_instance_view_form(self):
-        form_id = self.sudo().env.ref('quickbooks_online_odoo_connector.quickbooks_connect_form_view')
+        form_id = self.sudo().env.ref('quickbooks_connector_vts.quickbooks_connect_form_view')
         action = {
             'name': _('Quickbooks Instance'),
             'view_id': False,
@@ -46,11 +47,13 @@ class QuickbooksConnect(models.Model):
             self.quickbook_base_url = "https://sandbox-quickbooks.api.intuit.com/v3/company"
 
     def action_connect_quickbooks(self):
+        scopes = "com.intuit.quickbooks.accounting com.intuit.quickbooks.payment"
+        encoded_scopes = urllib.parse.quote(scopes)
         auth_url = (
             f"https://appcenter.intuit.com/connect/oauth2"
             f"?client_id={self.client_id}"
             f"&response_type=code"
-            f"&scope=com.intuit.quickbooks.accounting"
+            f"&scope={encoded_scopes}"
             f"&redirect_uri={self.redirect_url}"
             f"&state={self.id}"
         )

@@ -29,7 +29,7 @@ class QuickbooksLog(models.Model):
         In this method auto generated sequence added in log name.
         """
         for vals in vals_list:
-            sequence = self.env.ref("quickbooks_online_odoo_connector.seq_quickbooks_log")
+            sequence = self.env.ref("quickbooks_connector_vts.seq_quickbooks_log")
             name = sequence and sequence.next_by_id() or '/'
             company_id = self._context.get('company_id', self.env.user.company_id.id)
             if type(vals) == dict:

@@ -60,26 +60,26 @@
 
     <!-- Menu item -->
 
-    <menuitem id="main_mapping_menu" name="Mapping" parent="quickbooks_online_odoo_connector.menu_quickbooks_root"/>
+    <menuitem id="main_mapping_menu" name="Mapping" parent="quickbooks_connector_vts.menu_quickbooks_root"/>
 
 
     <menuitem id="menu_qbo_partner_map"
               name="Partner"
-              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_partner_map" sequence="1"/>
 
     <menuitem id="menu_qbo_account"
               name="Account"
-              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_account" sequence="1"/>
 
     <menuitem id="menu_qbo_taxes"
               name="Taxes"
-              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_taxes" sequence="1"/>
 
      <menuitem id="menu_qbo_payment_terms"
               name="Payment Terms"
-              parent="quickbooks_online_odoo_connector.main_mapping_menu"
+              parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_payment_terms" sequence="1"/>
 </odoo>

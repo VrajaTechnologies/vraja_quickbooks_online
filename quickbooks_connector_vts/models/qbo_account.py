@@ -20,7 +20,7 @@ class QuickbooksAccount(models.Model):
             'name': 'Quickbooks Accounts',
             'res_model': 'qbo.account.vts',
             'view_mode': 'form',
-            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_account_form').id,
+            'view_id': self.env.ref('quickbooks_connector_vts.view_qbo_account_form').id,
             'res_id': self.id,
             'target': 'current',
         }
