@@ -10,10 +10,9 @@ class QuickbooksPaymentTerms(models.Model):
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_payment_id = fields.Char(string="Payment ID")
     quickbook_payment_name = fields.Char(string="Payment Name")
-    partner_id = fields.Many2one('account.payment.term', string="Payment Terms")
+    payment_id = fields.Many2one('account.payment.term', string="Payment Terms")
     company_id = fields.Many2one('res.company', string="Company", default=lambda self: self.env.user.company_id)
     qbo_response = fields.Text(string="JSON Body")
-
 
     def payment_terms_mapping_view(self):
         self.ensure_one()

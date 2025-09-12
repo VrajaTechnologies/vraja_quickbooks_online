@@ -80,4 +80,12 @@ class QuickbooksAPIVts(models.AbstractModel):
             customer_url = f"{qck_url}/{endpoint}?query={query}"
             customer_info, customer_status = self.qb_get_request(token, customer_url)
 
+        elif operation == "import_account":
+            query = 'SELECT * FROM Account'
+            if from_date and to_date:
+                query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
+            endpoint = f"{company_id}/query"
+            customer_url = f"{qck_url}/{endpoint}?query={query}"
+            customer_info, customer_status = self.qb_get_request(token, customer_url)
+
         return customer_info, customer_status

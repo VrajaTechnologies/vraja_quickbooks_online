@@ -179,12 +179,12 @@ class QuickbooksOperations(models.TransientModel):
 
                     quickbook_map_payment_term = []
                     for term in payment_term:
-                        qkb_payment_name =term.get('Name')
+                        qkb_payment_name = term.get('Name')
                         qbo_payment_id = term.get('Id', '')
 
-                        partner = False
+                        payment_terms = False
                         if qkb_payment_name:
-                            partner = self.env['account.payment.term'].sudo().search(
+                            payment_terms = self.env['account.payment.term'].sudo().search(
                                 [('name', '=', qkb_payment_name)], limit=1)
 
                         payment_term_mapping = self.env['qbo.payment.terms.vts'].sudo().search(
@@ -197,14 +197,14 @@ class QuickbooksOperations(models.TransientModel):
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                                 'quickbook_payment_id': qbo_payment_id,
                                 'quickbook_payment_name': qkb_payment_name,
-                                'partner_id': partner.id if partner else False,
+                                'payment_id': payment_terms.id if payment_terms else False,
                                 'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
                                 'qbo_response': pprint.pformat(str(term)),
                             }
                             quickbook_map_payment_term.append(mapping_vals)
                         else:
                             mapping_vals = {
-                                'partner_id': partner.id if partner else False,
+                                'payment_id': payment_terms.id if payment_terms else False,
                                 'qbo_response': pprint.pformat(str(term)),
                             }
                             payment_term_mapping.sudo().write(mapping_vals)
@@ -246,6 +246,89 @@ class QuickbooksOperations(models.TransientModel):
                         fault_operation=True
                     )
 
+                # fetching Accounts Record from quickbook
+
+            elif self.import_operations == 'import_account':
+                account_info, account_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
+                    qck_url,
+                    company_id,
+                    token,
+                    self.import_operations,
+                    from_date=from_date,
+                    to_date=to_date
+                )
+
+                if account_status == 200 and account_info and 'QueryResponse' in account_info:
+                    accounts = account_info.get('QueryResponse', {}).get('Account', [])
+
+                    quickbook_map_account = []
+                    for account in accounts:
+                        qkb_account_name =account.get('Name')
+                        qbo_account_id = account.get('Id', '')
+
+                        accounts_detail = False
+                        if qkb_account_name:
+                            accounts_detail = self.env['account.account'].sudo().search(
+                                [('name', '=', qkb_account_name)], limit=1)
+
+                        account_mapping = self.env['qbo.account.vts'].sudo().search(
+                            [('quickbook_account_id', '=', qbo_account_id)],
+                            limit=1
+                        )
+
+                        if not account_mapping:
+                            mapping_vals = {
+                                'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                'quickbook_account_id': qbo_account_id,
+                                'quickbook_account_name': qkb_account_name,
+                                'accountS_id': accounts_detail.id if accounts_detail else False,
+                                'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+                                'qbo_response': pprint.pformat(str(account)),
+                            }
+                            quickbook_map_account.append(mapping_vals)
+                        else:
+                            mapping_vals = {
+                                'accountS_id': accounts_detail.id if accounts_detail else False,
+                                'qbo_response': pprint.pformat(str(account)),
+                            }
+                            account_mapping.sudo().write(mapping_vals)
+
+                    if quickbook_map_account:
+                        self.env['qbo.account.vts'].sudo().create(quickbook_map_account)
+                        log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                            quickbooks_operation_name='account',
+                            quickbooks_operation_type='import',
+                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                            quickbooks_operation_message='Successfully Fetch the Accounts Records'
+                        )
+                        self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                            quickbooks_operation_name='account',
+                            quickbooks_operation_type='import',
+                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                            quickbooks_operation_message='Successfully Fetch Accounts Records',
+                            process_request_message='',
+                            process_response_message=pprint.pformat(account_info),
+                            log_id=log_id,
+                            fault_operation=True
+                        )
+                else:
+                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                        quickbooks_operation_name='account',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Failed Fetch the Accounts Records'
+                    )
+                    self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                        quickbooks_operation_name='account',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Failed To Fetch Accounts Records',
+                        process_request_message='',
+                        process_response_message=pprint.pformat(account_info),
+                        log_id=log_id,
+                        fault_operation=True
+                    )
+
             # fetching tax record
 
             elif self.import_operations == 'import_taxes':
@@ -266,9 +349,9 @@ class QuickbooksOperations(models.TransientModel):
                         qkb_tax_name = tax.get('Name','')
                         qbo_tax_id = tax.get('Id', '')
 
-                        partner = False
+                        tax_detail = False
                         if qkb_tax_name:
-                            partner = self.env['account.tax'].sudo().search(
+                            tax_detail = self.env['account.tax'].sudo().search(
                                 [('name', '=', qkb_tax_name)], limit=1)
 
                         tax_mapping = self.env['qbo.taxes.vts'].sudo().search(
@@ -280,14 +363,14 @@ class QuickbooksOperations(models.TransientModel):
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                                 'quickbook_tax_id': qbo_tax_id,
                                 'quickbook_tax_name': qkb_tax_name,
-                                'partner_id': partner.id if partner else False,
+                                'tax_id': tax_detail.id if tax_detail else False,
                                 'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
                                 'qbo_response': pprint.pformat(str(tax)),
                             }
                             quickbook_map_taxes.append(mapping_vals)
                         else:
                             mapping_vals = {
-                                'partner_id': partner.id if partner else False,
+                                'tax_id': tax_detail.id if tax_detail else False,
                                 'qbo_response': pprint.pformat(str(tax)),
                             }
                             tax_mapping.sudo().write(mapping_vals)

@@ -10,7 +10,7 @@
                         <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_payment_id" readonly="1"/>
                         <field name="quickbook_payment_name" readonly="1"/>
-                        <field name="partner_id"/>
+                        <field name="payment_id"/>
                         <field name="company_id"/>
                         <field name="qbo_response" readonly="1"/>
                     </group>
@@ -27,7 +27,7 @@
                 <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_payment_id" readonly="1"/>
                 <field name="quickbook_payment_name" readonly="1"/>
-                <field name="partner_id"/>
+                <field name="payment_id"/>
                 <button name="payment_terms_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
         </field>

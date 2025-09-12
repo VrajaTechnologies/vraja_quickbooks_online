@@ -7,9 +7,10 @@
             <form string="Quickbooks Accounts">
                 <sheet>
                     <group>
-                        <field name="account_id" readonly="1"/>
-                        <field name="account_name" readonly="1"/>
-                        <field name="partner_id"/>
+                        <field name="quickbook_instance_id" readonly="1"/>
+                        <field name="quickbook_account_id" readonly="1"/>
+                        <field name="quickbook_account_name" readonly="1"/>
+                        <field name="accountS_id"/>
                         <field name="company_id"/>
                         <field name="qbo_response" readonly="1"/>
                     </group>
@@ -22,9 +23,10 @@
         <field name="model">qbo.account.vts</field>
         <field name="arch" type="xml">
             <list string="Quickbooks Account" editable="bottom">
-                <field name="account_id" readonly="1"/>
-                <field name="account_name" readonly="1"/>
-                <field name="partner_id"/>
+                <field name="quickbook_instance_id" readonly="1"/>
+                <field name="quickbook_account_id" readonly="1"/>
+                <field name="quickbook_account_name" readonly="1"/>
+                <field name="accountS_id"/>
                 <button name="account_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
         </field>

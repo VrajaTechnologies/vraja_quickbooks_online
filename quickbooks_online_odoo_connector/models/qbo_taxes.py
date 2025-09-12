@@ -10,7 +10,7 @@ class QuickbooksTaxes(models.Model):
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_tax_id = fields.Char(string="Tax ID")
     quickbook_tax_name = fields.Char(string="Tax Name")
-    partner_id = fields.Many2one('account.tax', string="Taxes")
+    tax_id = fields.Many2one('account.tax', string="Taxes")
     company_id = fields.Many2one('res.company', string="Company", default=lambda self: self.env.user.company_id)
     qbo_response = fields.Text(string="JSON Body")
 
