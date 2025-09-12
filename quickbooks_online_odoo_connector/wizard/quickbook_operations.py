@@ -137,14 +137,12 @@ class QuickbooksOperations(models.TransientModel):
                             quickbooks_operation_name='customer',
                             quickbooks_operation_type='import',
                             instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Error during customer import process',
+                            quickbooks_operation_message='Successfully Fetch the Customer',
                             process_request_message='',
                             process_response_message=pprint.pformat(customer_info),
                             log_id=log_id,
                             fault_operation=True
                         )
-
-
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='customer',
