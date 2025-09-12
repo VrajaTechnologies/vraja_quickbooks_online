@@ -60,7 +60,7 @@ class QuickbooksOperations(models.TransientModel):
                         customer_type_map = self.env['quickbooks.api.vts'].get_customer_types(qck_url, company_id, token)
                         target_type_id = next((id for id, name in customer_type_map.items() if name.lower() == self.qk_customer_type.lower()),None)
                         customers = [c for c in customers if c.get('CustomerTypeRef', {}).get('value') == target_type_id] if target_type_id else []
-                    #
+
                     # log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                     #     quickbooks_operation_name='customer',
                     #     quickbooks_operation_type='import',
@@ -85,7 +85,6 @@ class QuickbooksOperations(models.TransientModel):
                             [('quickbook_id', '=', qbo_customer_id)],
                             limit=1
                         )
-                        
                         if not partner_mapping:
                             mapping_vals = {
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
@@ -173,7 +172,6 @@ class QuickbooksOperations(models.TransientModel):
                     from_date=from_date,
                     to_date=to_date
                 )
-
                 if payment_status == 200 and payment_info and 'QueryResponse' in payment_info:
                     payment_term = payment_info.get('QueryResponse', {}).get('Term', [])
 
@@ -227,7 +225,6 @@ class QuickbooksOperations(models.TransientModel):
                             log_id=log_id,
                             fault_operation=True
                         )
-
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='payment_term',
