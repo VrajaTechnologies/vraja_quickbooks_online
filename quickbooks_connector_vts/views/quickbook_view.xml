@@ -102,7 +102,7 @@
                             <div class="container o_kanban_card_content fa-2x">
                                 <div class="row mt10">
                                     <div class="col-4 border-right">
-                                        <a name="%(quickbooks_online_odoo_connector.action_quickbook_customer_id)d"
+                                        <a name="%(quickbooks_connector_vts.action_quickbook_customer_id)d"
                                            type="action"
                                            class="d-flex flex-column align-items-center">
                                             <span class="fa-stack fa-lg" title="Customer">
@@ -113,7 +113,7 @@
                                         </a>
                                     </div>
                                     <div class="col-4 border-right">
-                                        <a name="%(quickbooks_online_odoo_connector.action_quickbooks_order_id)d"
+                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
                                            type="action"
                                            class="d-flex flex-column align-items-center">
                                             <span class="fa-stack fa-lg" title="Orders">
@@ -126,7 +126,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-6">
-                                        <button name="%(quickbooks_online_odoo_connector.actions_quickbook_operations)d"
+                                        <button name="%(quickbooks_connector_vts.actions_quickbook_operations)d"
                                                 type="action" string="Operations" class="btn-primary"
                                                 t-attf-style="border-radius: 12px;">
                                             <span>

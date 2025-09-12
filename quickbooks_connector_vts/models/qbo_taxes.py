@@ -21,7 +21,7 @@ class QuickbooksTaxes(models.Model):
             'name': 'Quickbooks Taxes',
             'res_model': 'qbo.taxes.vts',
             'view_mode': 'form',
-            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_taxes_form').id,
+            'view_id': self.env.ref('quickbooks_connector_vts.view_qbo_taxes_form').id,
             'res_id': self.id,
             'target': 'current',
         }

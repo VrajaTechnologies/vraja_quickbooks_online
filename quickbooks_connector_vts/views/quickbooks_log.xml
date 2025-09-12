@@ -174,16 +174,16 @@
     <!-- Log Menu & it's Items -->
     <menuitem id="log_menu"
               name="Log"
-              parent="quickbooks_online_odoo_connector.menu_quickbooks_root"
+              parent="quickbooks_connector_vts.menu_quickbooks_root"
               sequence="30"/>
     <menuitem id="menu_quickbook_log"
               name="Log Book"
-              parent="quickbooks_online_odoo_connector.log_menu"
+              parent="quickbooks_connector_vts.log_menu"
               sequence="0"
               action="action_quickbooks_log"/>
     <menuitem id="menu_quickbook_log_line"
               name="Log Book Line"
-              parent="quickbooks_online_odoo_connector.log_menu"
+              parent="quickbooks_connector_vts.log_menu"
               sequence="1"
               action="action_quickbooks_log_line"/>
 </odoo>

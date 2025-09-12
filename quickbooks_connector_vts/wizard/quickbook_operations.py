@@ -161,8 +161,7 @@ class QuickbooksOperations(models.TransientModel):
                         fault_operation=True
                     )
 
-        # fetching payment terms record
-
+            # fetching payment terms record
             elif self.import_operations == 'import_payment_terms':
                 payment_info, payment_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
                     qck_url,

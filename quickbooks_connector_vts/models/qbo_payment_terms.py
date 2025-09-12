@@ -21,7 +21,7 @@ class QuickbooksPaymentTerms(models.Model):
             'name': 'Quickbooks Payment Terms',
             'res_model': 'qbo.payment.terms.vts',
             'view_mode': 'form',
-            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_payment_terms_form').id,
+            'view_id': self.env.ref('quickbooks_connector_vts.view_qbo_payment_terms_form').id,
             'res_id': self.id,
             'target': 'current',
         }

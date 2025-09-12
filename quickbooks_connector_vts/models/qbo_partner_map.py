@@ -22,7 +22,7 @@ class QuickbooksParnterMap(models.Model):
             'name': 'Quickbooks Partner Map',
             'res_model': 'qbo.partner.map.vts',
             'view_mode': 'form',
-            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_partner_map_form').id,
+            'view_id': self.env.ref('quickbooks_connector_vts.view_qbo_partner_map_form').id,
             'res_id': self.id,
             'target': 'current',
         }
