@@ -8,7 +8,7 @@
     'license': 'OPL-1',
 
     # Dependencies
-    'depends': ["account_accountant"],
+    'depends': ["accountant"],
 
     # Views
     'data': [

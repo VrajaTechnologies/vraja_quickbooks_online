@@ -53,7 +53,7 @@ class QuickbooksLog(models.Model):
         log_id = self.create({
             'quickbooks_operation_name': quickbooks_operation_name,
             'quickbooks_operation_type': quickbooks_operation_type,
-            'qkb_instance_id': instance.id,
+            'qkb_instance_id': instance,
             'quickbooks_operation_message': quickbooks_operation_message,
         })
         return log_id
@@ -103,7 +103,7 @@ class QuickbooksLogLine(models.Model):
         log_line_id = vals.update({
             'quickbooks_operation_name': quickbooks_operation_name,
             'quickbooks_operation_type': quickbooks_operation_type,
-            'qkb_instance_id': instance.id,
+            'qkb_instance_id': instance,
             'quickbooks_operation_message': quickbooks_operation_message,
             'process_request_message': pprint.pformat(process_request_message) if process_request_message else False,
             'process_response_message': pprint.pformat(process_response_message) if process_response_message else False,
