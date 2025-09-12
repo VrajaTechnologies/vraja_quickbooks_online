@@ -54,7 +54,7 @@ class QuickbooksLog(models.Model):
             'quickbooks_operation_name': quickbooks_operation_name,
             'quickbooks_operation_type': quickbooks_operation_type,
             'qkb_instance_id': instance.id,
-            'quickbooks_operation_message': quickbooks_operation_message
+            'quickbooks_operation_message': quickbooks_operation_message,
         })
         return log_id
 
@@ -89,7 +89,7 @@ class QuickbooksLogLine(models.Model):
             if type(vals) == dict:
                 quickbooks_operation_id = vals.get('quickbooks_operation_id')
                 operation = quickbooks_operation_id and self.env['quickbooks.log.vts'].browse(quickbooks_operation_id).id or False
-                company_id = operation and operation.company_id.id or self.env.user.company_id.id
+                company_id = quickbooks_operation_id and self.env['quickbooks.log.vts'].browse(quickbooks_operation_id) and quickbooks_operation_id and self.env['quickbooks.log.vts'].browse(quickbooks_operation_id).company_id.id or self.env.user.company_id.id
                 vals.update({'company_id': company_id})
         return super(QuickbooksLogLine, self).create(vals_list)
 

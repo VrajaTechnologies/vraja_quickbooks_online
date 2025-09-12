@@ -7,6 +7,7 @@ class QuickbooksPaymentTerms(models.Model):
     _description = "Quickbooks Payment Terms"
     _rec_name = "partner_id"
 
+    quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_payment_id = fields.Char(string="Payment ID")
     quickbook_payment_name = fields.Char(string="Payment Name")
     partner_id = fields.Many2one('account.payment.term', string="Payment Terms")

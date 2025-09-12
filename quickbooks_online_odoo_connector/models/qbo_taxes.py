@@ -7,6 +7,7 @@ class QuickbooksTaxes(models.Model):
     _description = "Quickbooks Taxes"
     _rec_name = "partner_id"
 
+    quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_tax_id = fields.Char(string="Tax ID")
     quickbook_tax_name = fields.Char(string="Tax Name")
     partner_id = fields.Many2one('account.tax', string="Taxes")

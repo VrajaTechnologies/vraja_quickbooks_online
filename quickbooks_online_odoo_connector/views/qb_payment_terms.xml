@@ -7,6 +7,7 @@
             <form string="Quickbooks Payments Terms">
                 <sheet>
                     <group>
+                        <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_payment_id" readonly="1"/>
                         <field name="quickbook_payment_name" readonly="1"/>
                         <field name="partner_id"/>
@@ -17,11 +18,13 @@
             </form>
         </field>
     </record>
+
     <record id="view_qbo_payment_terms_list" model="ir.ui.view">
         <field name="name">qbo.payment.terms.vts.list</field>
         <field name="model">qbo.payment.terms.vts</field>
         <field name="arch" type="xml">
             <list string="Quickbooks Account" editable="bottom">
+                <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_payment_id" readonly="1"/>
                 <field name="quickbook_payment_name" readonly="1"/>
                 <field name="partner_id"/>

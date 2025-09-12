@@ -8,6 +8,7 @@
             <form string="Quickbooks Taxes">
                 <sheet>
                     <group>
+                        <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_tax_id" readonly="1"/>
                         <field name="quickbook_tax_name" readonly="1"/>
                         <field name="partner_id"/>
@@ -23,6 +24,7 @@
         <field name="model">qbo.taxes.vts</field>
         <field name="arch" type="xml">
             <list string="Quickbooks Taxes" editable="bottom">
+                <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_tax_id" readonly="1"/>
                 <field name="quickbook_tax_name" readonly="1"/>
                 <field name="partner_id"/>

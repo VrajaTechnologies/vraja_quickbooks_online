@@ -1,8 +1,9 @@
 # -*- coding: utf-8 *-*
 from odoo import http
-from odoo.http import request
+from odoo.http import request, _logger
 import base64
 import requests
+import logging
 from werkzeug.utils import redirect
 
 class QuickbookAuthController(http.Controller):
@@ -13,7 +14,7 @@ class QuickbookAuthController(http.Controller):
         realm_id = kwargs.get("realmId")
         quickbook_id = kwargs.get("state")
 
-        quickbook_connect = request.env['quickbooks.connect'].browse(int(quickbook_id))
+        quickbook_connect = request.env['quickbooks.connect'].sudo().browse(int(quickbook_id))
         if not quickbook_connect:
             return "Invalid Quickbook"
 
@@ -34,7 +35,8 @@ class QuickbookAuthController(http.Controller):
 
         response = requests.post(token_url, headers=headers, data=payload)
         if response.status_code != 200:
-            quickbook_connect.write({
+            _logger.error("QuickBooks token exchange failed: %s", response.text)
+            quickbook_connect.sudo().write({
                 "state": "failed",
                 "reason" : f"Connection Error: {response.text}"})
             return redirect(f"/web#id={quickbook_connect.id}&model=quickbooks.connect&view_type=form")
