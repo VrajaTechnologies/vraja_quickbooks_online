@@ -6,21 +6,21 @@
         <field name="model">quickbooks.connect</field>
         <field name="arch" type="xml">
             <form string="QuickBooks Connect">
-            	<header>
-	                <button name="action_connect_quickbooks"
-	                        string="Connect"
-	                        type="object"
-	                        class="oe_highlight" invisible="state != 'connecting'"/>
-	                <button name="refresh_access_token"
-	                        string="Refresh Token"
-	                        type="object"
-	                        class="oe_highlight" invisible="state != 'connected'"/>
-	                <button name="reconnect_quickbook"
-	                        string="Reconnect"
-	                        type="object"
-	                        class="oe_highlight" invisible="state not in ['connected','failed']"/>
-                	<field name="state" widget="statusbar"/>
-	            </header>
+                <header>
+                    <button name="action_connect_quickbooks"
+                            string="Connect"
+                            type="object"
+                            class="oe_highlight" invisible="state != 'connecting'"/>
+                    <button name="refresh_access_token"
+                            string="Refresh Token"
+                            type="object"
+                            class="oe_highlight" invisible="state != 'connected'"/>
+                    <button name="reconnect_quickbook"
+                            string="Reconnect"
+                            type="object"
+                            class="oe_highlight" invisible="state not in ['connected','failed']"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -34,19 +34,19 @@
                     <notebook>
                         <page name="Credentials" string="Credentials">
                             <group>
-                            	<group>
-	                                <field name="client_id" required="1" readonly="state == 'connected'"/>
-	                                <field name="client_secret" required="1" readonly="state == 'connected'"/>
-	                                <field name="access_token" invisible="1"/>
-	                                <field name="refresh_token" invisible="1"/>
-	                        		<field name="reason" readonly="1"/>
-                            	</group>
-                            	<group>
-	                                <field name="redirect_url" required="1" readonly="state == 'connected'"/>
-	                                <field name="environment" readonly="state == 'connected'"/>
-	                                <field name="quickbook_base_url" invisible="1"/>
-	                                <field name="realm_id" invisible="1"/>
-                            	</group>
+                                <group>
+                                    <field name="client_id" required="1" readonly="state == 'connected'"/>
+                                    <field name="client_secret" required="1" readonly="state == 'connected'"/>
+                                    <field name="access_token" invisible="1"/>
+                                    <field name="refresh_token" invisible="1"/>
+                                    <field name="reason" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="redirect_url" required="1" readonly="state == 'connected'"/>
+                                    <field name="environment" readonly="state == 'connected'"/>
+                                    <field name="quickbook_base_url" invisible="1"/>
+                                    <field name="realm_id" invisible="1"/>
+                                </group>
                             </group>
                         </page>
                     </notebook>
@@ -66,18 +66,40 @@
             </p>
         </field>
     </record>
+    <record id="action_quickbook_payment_term_id" model="ir.actions.act_window">
+        <field name="name">Quickbook Payment Term</field>
+        <field name="res_model">account.payment.term</field>
+        <field name="view_id" ref="account.view_payment_term_tree"/>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Quickbooks Payment Terms will display here
+            </p>
+        </field>
+    </record>
+    <record id="action_quickbook_taxes_id" model="ir.actions.act_window">
+        <field name="name">Quickbook Taxes</field>
+        <field name="res_model">account.tax</field>
+        <field name="view_id" ref="account.view_tax_tree"/>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Quickbooks Taxes will display here
+            </p>
+        </field>
+    </record>
 
     <record id="action_quickbooks_order_id" model="ir.actions.act_window">
-	    <field name="name">Quickbook Invoice</field>
-	    <field name="res_model">account.move</field>
-	    <field name="view_id" ref="account.view_out_invoice_tree"/>
-	    <!-- <field name="domain">[('instance_id', '=', active_id)]</field> -->
-	    <field name="help" type="html">
-	        <p class="o_view_nocontent_smiling_face">
-	            Quickbooks Invoices will display here
-	        </p>
-	    </field>
-	</record>
+        <field name="name">Quickbook Invoice</field>
+        <field name="res_model">account.account</field>
+        <field name="view_id" ref="account.view_account_list"/>
+        <!-- <field name="domain">[('instance_id', '=', active_id)]</field> -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Quickbooks Invoices will display here
+            </p>
+        </field>
+    </record>
 
     <!--kanban view-->
     <record id="quickbooks_connect_kanban" model="ir.ui.view">
@@ -124,7 +146,7 @@
                                         </a>
                                     </div>
                                     <div class="col-4 border-right">
-                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
+                                        <a name="%(quickbooks_connector_vts.action_quickbook_taxes_id)d"
                                            type="action"
                                            class="d-flex flex-column align-items-center">
                                             <span class="fa-stack fa-lg" title="Orders">
@@ -135,7 +157,7 @@
                                         </a>
                                     </div>
                                     <div class="col-4 border-right">
-                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
+                                        <a name="%(quickbooks_connector_vts.action_quickbook_payment_term_id)d"
                                            type="action"
                                            class="d-flex flex-column align-items-center">
                                             <span class="fa-stack fa-lg" title="Orders">

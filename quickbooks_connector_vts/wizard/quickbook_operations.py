@@ -30,7 +30,7 @@ class QuickbooksOperations(models.TransientModel):
                    ],
         string='Import Operations', default='import_customers'
     )
-    
+    create_records = fields.Boolean(string="Create Record")
     from_date = fields.Datetime(string='From Date', default=_get_default_from_date_order)
     to_date = fields.Datetime(string='To Date', default=_get_default_to_date)
     qk_customer_type = fields.Char(string="Customer Type")
@@ -80,6 +80,21 @@ class QuickbooksOperations(models.TransientModel):
                         if qkb_cust_name or qkb_cust_email:
                             partner = self.env['res.partner'].sudo().search(
                                 ['|', ('name', '=', qkb_cust_name), ('email', '=', qkb_cust_email)],limit=1)
+
+                            if not partner and self.create_records == True:
+                                self.env['res.partner'].create({
+                                    'name' :qkb_cust_name,
+                                    'street':'',
+                                    'street2':'',
+                                    'state_id':'',
+                                    'zip':'',
+                                    'country_id':'',
+                                    'city':'',
+                                    'mobile':'',
+                                    'email':'',
+                                })
+                                pass
+
                         
                         partner_mapping = self.env['qbo.partner.map.vts'].sudo().search(
                             [('quickbook_id', '=', qbo_customer_id)],
@@ -266,6 +281,7 @@ class QuickbooksOperations(models.TransientModel):
                         if qkb_account_name:
                             accounts_detail = self.env['account.account'].sudo().search(
                                 [('name', '=', qkb_account_name)], limit=1)
+
 
                         account_mapping = self.env['qbo.account.vts'].sudo().search(
                             [('quickbook_account_id', '=', qbo_account_id)],
