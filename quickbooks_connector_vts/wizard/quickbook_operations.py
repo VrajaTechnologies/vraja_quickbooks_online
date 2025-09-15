@@ -24,13 +24,13 @@ class QuickbooksOperations(models.TransientModel):
                                          string='Quickbooks Operations', default='import')
     import_operations = fields.Selection(
         selection=[("import_customers", "Import Customer"),
+                    ('import_account', 'Import Account'),
                     ("import_taxes", "Import Taxes"),
                     ("import_payment_terms", "Import Payment Terms"),
-                    ('import_account', 'Import Account'),
                    ],
         string='Import Operations', default='import_customers'
     )
-    create_records = fields.Boolean(string="Create Record")
+    
     from_date = fields.Datetime(string='From Date', default=_get_default_from_date_order)
     to_date = fields.Datetime(string='To Date', default=_get_default_to_date)
     qk_customer_type = fields.Char(string="Customer Type")
@@ -44,14 +44,13 @@ class QuickbooksOperations(models.TransientModel):
             to_date = self.to_date.strftime('%Y-%m-%dT%H:%M:%S-07:00') if self.to_date else None
 
             if self.import_operations == 'import_customers':
-                customer_info, cust_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
+                customer_info, cust_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(
                     qck_url,
                     company_id,
                     token,
                     self.import_operations,
                     from_date=from_date,
-                    to_date=to_date
-                )
+                    to_date=to_date)
 
                 if cust_status == 200 and customer_info and 'QueryResponse' in customer_info:
                     customers = customer_info.get('QueryResponse', {}).get('Customer', [])
@@ -61,45 +60,28 @@ class QuickbooksOperations(models.TransientModel):
                         target_type_id = next((id for id, name in customer_type_map.items() if name.lower() == self.qk_customer_type.lower()),None)
                         customers = [c for c in customers if c.get('CustomerTypeRef', {}).get('value') == target_type_id] if target_type_id else []
 
-                    # log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                    #     quickbooks_operation_name='customer',
-                    #     quickbooks_operation_type='import',
-                    #     instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                    #     quickbooks_operation_message='Quickbooks to fetch customers'
-                    # )
+                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                        quickbooks_operation_name='customer',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Quickbooks to fetch customers'
+                    )
                     quickbook_map_customers = []
                     qkb_map_customer_log_ln = []
                     for customer in customers:
-                        qkb_cust_email = ''
-                        if customer.get('PrimaryEmailAddr', ''):
-                            qkb_cust_email = customer.get('PrimaryEmailAddr', {}).get('Address', '')
-                        qkb_cust_name = customer.get('FullyQualifiedName', '')
+                        qkb_cust_email = customer.get('PrimaryEmailAddr', {}).get('Address', '').strip()
+                        qkb_cust_name = customer.get('FullyQualifiedName', '').strip()
                         qbo_customer_id = customer.get('Id', '')
 
                         partner = False
-                        if qkb_cust_name or qkb_cust_email:
-                            partner = self.env['res.partner'].sudo().search(
-                                ['|', ('name', '=', qkb_cust_name), ('email', '=', qkb_cust_email)],limit=1)
-
-                            if not partner and self.create_records == True:
-                                self.env['res.partner'].create({
-                                    'name' :qkb_cust_name,
-                                    'street':'',
-                                    'street2':'',
-                                    'state_id':'',
-                                    'zip':'',
-                                    'country_id':'',
-                                    'city':'',
-                                    'mobile':'',
-                                    'email':'',
-                                })
-                                pass
-
+                        if qkb_cust_email:
+                            partner = self.env['res.partner'].sudo().search([('email', '=', qkb_cust_email)],limit=1)
+                        if not partner and qkb_cust_name:
+                            partner = self.env['res.partner'].sudo().search([('name', '=', qkb_cust_name)],limit=1)
                         
                         partner_mapping = self.env['qbo.partner.map.vts'].sudo().search(
-                            [('quickbook_id', '=', qbo_customer_id)],
-                            limit=1
-                        )
+                            [('quickbook_id', '=', qbo_customer_id)],limit=1)
+
                         if not partner_mapping:
                             mapping_vals = {
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
@@ -110,53 +92,37 @@ class QuickbooksOperations(models.TransientModel):
                                 'qbo_response': pprint.pformat(str(customer)),
                             }
                             quickbook_map_customers.append(mapping_vals)
-                            # if not partner:
-                            #     customer_log_val = {
-                            #         'quickbooks_operation_name': 'customer',
-                            #         'quickbooks_operation_type': 'import',
-                            #         'qkb_instance_id': self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            #         'quickbooks_operation_message': f"Partner doesn't match with QuickBooks customer: {qkb_cust_name}",
-                            #         'process_response_message': pprint.pformat(customer_info),
-                            #         'quickbooks_operation_id': log_id.id if log_id else False,
-                            #         'fault_operation': True
-                            #     }
-                            #     qkb_map_customer_log_ln.append(customer_log_val)
-                            # elif partner:
-                            #     customer_log_val = {
-                            #         'quickbooks_operation_name': 'customer',
-                            #         'quickbooks_operation_type': 'import',
-                            #         'qkb_instance_id': self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            #         'quickbooks_operation_message': f"Partner successfully mapped with QuickBooks customer: {qkb_cust_name}",
-                            #         'process_response_message': pprint.pformat(customer_info),
-                            #         'quickbooks_operation_id': log_id.id if log_id else False,
-                            #         'fault_operation': False
-                            #     }
-                            #     qkb_map_customer_log_ln.append(customer_log_val)
+                            if not partner:
+                                customer_log_val = {
+                                    'quickbooks_operation_name': 'customer',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Partner doesn't match with QuickBooks customer: {qkb_cust_name}",
+                                    'process_response_message': pprint.pformat(customer),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                    'fault_operation': True
+                                }
+                                qkb_map_customer_log_ln.append(customer_log_val)
+                            elif partner:
+                                partner.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                                customer_log_val = {
+                                    'quickbooks_operation_name': 'customer',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Partner successfully mapped with QuickBooks customer: {qkb_cust_name}",
+                                    'process_response_message': pprint.pformat(customer),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                }
+                                qkb_map_customer_log_ln.append(customer_log_val)
                         else:
                             mapping_vals = {
                                 'partner_id': partner.id if partner else False,
-                                'qbo_response': pprint.pformat(str(customer)),
-                            }
+                                'qbo_response': pprint.pformat(str(customer))}
                             partner_mapping.sudo().write(mapping_vals)
                     
                     if quickbook_map_customers:
-                        self.env['qbo.partner.map.vts'].sudo().create(quickbook_map_customers)
-                        log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                            quickbooks_operation_name='customer',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='customer Fetch successfully'
-                        )
-                        self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-                            quickbooks_operation_name='customer',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch the Customer',
-                            process_request_message='',
-                            process_response_message=pprint.pformat(customer_info),
-                            log_id=log_id,
-                            fault_operation=True
-                        )
+                        partner_mapped = self.env['qbo.partner.map.vts'].sudo().create(quickbook_map_customers)
+                        customer_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_customer_log_ln)
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='customer',
@@ -178,31 +144,35 @@ class QuickbooksOperations(models.TransientModel):
 
             # fetching payment terms record
             elif self.import_operations == 'import_payment_terms':
-                payment_info, payment_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
+                payment_info, payment_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(
                     qck_url,
                     company_id,
                     token,
                     self.import_operations,
                     from_date=from_date,
-                    to_date=to_date
-                )
+                    to_date=to_date)
+
                 if payment_status == 200 and payment_info and 'QueryResponse' in payment_info:
                     payment_term = payment_info.get('QueryResponse', {}).get('Term', [])
 
+                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                        quickbooks_operation_name='payment_term',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Quickbooks to fetch Payment terms'
+                    )
                     quickbook_map_payment_term = []
+                    qkb_map_term_log_ln = []
                     for term in payment_term:
-                        qkb_payment_name = term.get('Name')
+                        qkb_payment_name = term.get('Name', '').strip()
                         qbo_payment_id = term.get('Id', '')
 
                         payment_terms = False
                         if qkb_payment_name:
-                            payment_terms = self.env['account.payment.term'].sudo().search(
-                                [('name', '=', qkb_payment_name)], limit=1)
+                            payment_terms = self.env['account.payment.term'].sudo().search([('name', '=', qkb_payment_name)], limit=1)
 
                         payment_term_mapping = self.env['qbo.payment.terms.vts'].sudo().search(
-                            [('quickbook_payment_id', '=', qbo_payment_id)],
-                            limit=1
-                        )
+                            [('quickbook_payment_id', '=', qbo_payment_id)],limit=1)
 
                         if not payment_term_mapping:
                             mapping_vals = {
@@ -214,6 +184,28 @@ class QuickbooksOperations(models.TransientModel):
                                 'qbo_response': pprint.pformat(str(term)),
                             }
                             quickbook_map_payment_term.append(mapping_vals)
+                            if not payment_terms:
+                                term_log_val = {
+                                    'quickbooks_operation_name': 'payment_term',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Payment Terms doesn't match with QuickBooks Terms: {qkb_payment_name}",
+                                    'process_response_message': pprint.pformat(term),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                    'fault_operation': True
+                                }
+                                qkb_map_term_log_ln.append(term_log_val)
+                            elif payment_terms:
+                                payment_terms.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                                term_log_val = {
+                                    'quickbooks_operation_name': 'payment_term',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Payment Terms successfully mapped with QuickBooks Terms: {qkb_payment_name}",
+                                    'process_response_message': pprint.pformat(term),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                }
+                                qkb_map_term_log_ln.append(term_log_val)
                         else:
                             mapping_vals = {
                                 'payment_id': payment_terms.id if payment_terms else False,
@@ -222,23 +214,8 @@ class QuickbooksOperations(models.TransientModel):
                             payment_term_mapping.sudo().write(mapping_vals)
 
                     if quickbook_map_payment_term:
-                        self.env['qbo.payment.terms.vts'].sudo().create(quickbook_map_payment_term)
-                        log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                            quickbooks_operation_name='payment_term',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch the Payment Terms Records'
-                        )
-                        self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-                            quickbooks_operation_name='payment_term',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch Payment Terms Records',
-                            process_request_message='',
-                            process_response_message=pprint.pformat(payment_info),
-                            log_id=log_id,
-                            fault_operation=True
-                        )
+                        terms_mapped = self.env['qbo.payment.terms.vts'].sudo().create(quickbook_map_payment_term)
+                        terms_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_term_log_ln)
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='payment_term',
@@ -257,10 +234,9 @@ class QuickbooksOperations(models.TransientModel):
                         fault_operation=True
                     )
 
-                # fetching Accounts Record from quickbook
-
+            # fetching Accounts Record from quickbook
             elif self.import_operations == 'import_account':
-                account_info, account_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
+                account_info, account_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(
                     qck_url,
                     company_id,
                     token,
@@ -272,9 +248,16 @@ class QuickbooksOperations(models.TransientModel):
                 if account_status == 200 and account_info and 'QueryResponse' in account_info:
                     accounts = account_info.get('QueryResponse', {}).get('Account', [])
 
+                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                        quickbooks_operation_name='account',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Quickbooks to fetch Chart of Account'
+                    )
                     quickbook_map_account = []
+                    qkb_map_account_log_ln = []
                     for account in accounts:
-                        qkb_account_name =account.get('Name')
+                        qkb_account_name =account.get('Name','').strip()
                         qbo_account_id = account.get('Id', '')
 
                         accounts_detail = False
@@ -282,59 +265,63 @@ class QuickbooksOperations(models.TransientModel):
                             accounts_detail = self.env['account.account'].sudo().search(
                                 [('name', '=', qkb_account_name)], limit=1)
 
-
                         account_mapping = self.env['qbo.account.vts'].sudo().search(
-                            [('quickbook_account_id', '=', qbo_account_id)],
-                            limit=1
-                        )
+                            [('quickbook_account_id', '=', qbo_account_id)],limit=1)
 
                         if not account_mapping:
                             mapping_vals = {
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                                 'quickbook_account_id': qbo_account_id,
                                 'quickbook_account_name': qkb_account_name,
-                                'accountS_id': accounts_detail.id if accounts_detail else False,
+                                'account_id': accounts_detail.id if accounts_detail else False,
                                 'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
                                 'qbo_response': pprint.pformat(str(account)),
                             }
                             quickbook_map_account.append(mapping_vals)
+                            if not accounts_detail:
+                                account_log_val = {
+                                    'quickbooks_operation_name': 'account',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Chart of Account doesn't match with QuickBooks Account: {qkb_account_name}",
+                                    'process_response_message': pprint.pformat(account),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                    'fault_operation': True
+                                }
+                                qkb_map_account_log_ln.append(account_log_val)
+                            elif accounts_detail:
+                                accounts_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                                account_log_val = {
+                                    'quickbooks_operation_name': 'account',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Chart of Account successfully mapped with QuickBooks Account: {qkb_account_name}",
+                                    'process_response_message': pprint.pformat(account),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                }
+                                qkb_map_account_log_ln.append(account_log_val)
                         else:
                             mapping_vals = {
-                                'accountS_id': accounts_detail.id if accounts_detail else False,
+                                'account_id': accounts_detail.id if accounts_detail else False,
                                 'qbo_response': pprint.pformat(str(account)),
                             }
                             account_mapping.sudo().write(mapping_vals)
 
                     if quickbook_map_account:
-                        self.env['qbo.account.vts'].sudo().create(quickbook_map_account)
-                        log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                            quickbooks_operation_name='account',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch the Accounts Records'
-                        )
-                        self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-                            quickbooks_operation_name='account',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch Accounts Records',
-                            process_request_message='',
-                            process_response_message=pprint.pformat(account_info),
-                            log_id=log_id,
-                            fault_operation=True
-                        )
+                        account_mapped = self.env['qbo.account.vts'].sudo().create(quickbook_map_account)
+                        account_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_account_log_ln)
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='account',
                         quickbooks_operation_type='import',
-                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                        quickbooks_operation_message='Failed Fetch the Accounts Records'
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Failed Fetch the Chart of Account Records'
                     )
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                         quickbooks_operation_name='account',
                         quickbooks_operation_type='import',
-                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                        quickbooks_operation_message='Failed To Fetch Accounts Records',
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Failed To Fetch Chart of Account Records',
                         process_request_message='',
                         process_response_message=pprint.pformat(account_info),
                         log_id=log_id,
@@ -342,9 +329,8 @@ class QuickbooksOperations(models.TransientModel):
                     )
 
             # fetching tax record
-
             elif self.import_operations == 'import_taxes':
-                tax_info, tax_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
+                tax_info, tax_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(
                     qck_url,
                     company_id,
                     token,
@@ -356,7 +342,14 @@ class QuickbooksOperations(models.TransientModel):
                 if tax_status == 200 and tax_info and 'QueryResponse' in tax_info:
                     taxes = tax_info.get('QueryResponse', {}).get('TaxCode', [])
 
+                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                        quickbooks_operation_name='taxes',
+                        quickbooks_operation_type='import',
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        quickbooks_operation_message='Quickbooks to fetch Taxes'
+                    )
                     quickbook_map_taxes = []
+                    qkb_map_taxes_log_ln = []
                     for tax in taxes:
                         qkb_tax_name = tax.get('Name','')
                         qbo_tax_id = tax.get('Id', '')
@@ -367,9 +360,7 @@ class QuickbooksOperations(models.TransientModel):
                                 [('name', '=', qkb_tax_name)], limit=1)
 
                         tax_mapping = self.env['qbo.taxes.vts'].sudo().search(
-                            [('quickbook_tax_id', '=', qbo_tax_id)],
-                            limit=1
-                        )
+                            [('quickbook_tax_id', '=', qbo_tax_id)],limit=1)
                         if not tax_mapping:
                             mapping_vals = {
                                 'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
@@ -380,6 +371,28 @@ class QuickbooksOperations(models.TransientModel):
                                 'qbo_response': pprint.pformat(str(tax)),
                             }
                             quickbook_map_taxes.append(mapping_vals)
+                            if not tax_detail:
+                                taxes_log_val = {
+                                    'quickbooks_operation_name': 'taxes',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Taxes doesn't match with QuickBooks Taxes: {qkb_tax_name}",
+                                    'process_response_message': pprint.pformat(tax),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                    'fault_operation': True
+                                }
+                                qkb_map_taxes_log_ln.append(taxes_log_val)
+                            elif tax_detail:
+                                tax_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                                taxes_log_val = {
+                                    'quickbooks_operation_name': 'taxes',
+                                    'quickbooks_operation_type': 'import',
+                                    'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                                    'quickbooks_operation_message': f"Taxes successfully mapped with QuickBooks Taxes: {qkb_tax_name}",
+                                    'process_response_message': pprint.pformat(tax),
+                                    'quickbooks_operation_id': log_id.id if log_id else False,
+                                }
+                                qkb_map_taxes_log_ln.append(taxes_log_val)
                         else:
                             mapping_vals = {
                                 'tax_id': tax_detail.id if tax_detail else False,
@@ -388,35 +401,20 @@ class QuickbooksOperations(models.TransientModel):
                             tax_mapping.sudo().write(mapping_vals)
 
                     if quickbook_map_taxes:
-                        self.env['qbo.taxes.vts'].sudo().create(quickbook_map_taxes)
-                    log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                            quickbooks_operation_name='taxes',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch The Taxes Record'
-                        )
-                    self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-                            quickbooks_operation_name='taxes',
-                            quickbooks_operation_type='import',
-                            instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
-                            quickbooks_operation_message='Successfully Fetch The Taxes Record',
-                            process_request_message='',
-                            process_response_message=pprint.pformat(tax_info),
-                            log_id=log_id,
-                            fault_operation=True
-                        )
+                        taxes_mapped = self.env['qbo.taxes.vts'].sudo().create(quickbook_map_taxes)
+                        taxes_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_taxes_log_ln)
 
                 else:
                     log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                         quickbooks_operation_name='taxes',
                         quickbooks_operation_type='import',
-                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                         quickbooks_operation_message='Failed to fetch taxes'
                     )
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                         quickbooks_operation_name='taxes',
                         quickbooks_operation_type='import',
-                        instance=self.quickbook_instance_id if self.quickbook_instance_id else False,
+                        instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                         quickbooks_operation_message='Error during taxes import process',
                         process_request_message='',
                         process_response_message=pprint.pformat(tax_info),
