@@ -9,46 +9,47 @@
             <field name="arch" type="xml">
                 <form>
                     <sheet>
-                        <p style="background-color:powderblue; padding: 10px;"
-                           invisible="import_operations != 'import_payment_terms'">
-                            <b>Notes: Import Payment Term Process</b>
-                            <ul>
-                                <br/>
-                                <li>To import Payment Term From Quickbooks</li>
-                            </ul>
-                        </p>
-                        <p style="background-color:powderblue; padding: 10px;"
-                           invisible="import_operations != 'import_account'">
-                            <b>Notes: Import Chart of Account Process</b>
-                            <ul>
-                                <br/>
-                                <li>To import Chart of Account From Quickbooks</li>
-                            </ul>
-                        </p>
-                        <p style="background-color:powderblue; padding: 10px;"
+                        <p style="background-color: powderblue; padding: 10px;"
                            invisible="import_operations != 'import_customers'">
                             <b>Notes: Import Customers Process</b>
                             <ul>
                                 <br/>
-                                <li>
-                                    To Import Customers From Quickbooks
-                                </li>
+                                <li>Fetched customers from QuickBooks using API with applied filters.</li>
+                                <li><b>Customer Type Filter :</b> Only customers with type <span id="customer-type-info">[Customer Type]</span> were fetched.</li>
+                                <li><b>Date Filter :</b> Only customers created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
                             </ul>
                         </p>
-                        <p style="background-color:powderblue; padding: 10px;"
+                        <p style="background-color: powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_account'">
+                            <b>Notes: Import Chart of Account Process</b>
+                            <ul>
+                                <br/>
+                                <li>Fetched Chart of Accounts from QuickBooks using API with applied filter.</li>
+                                <li><b>Date Filter :</b> Only accounts created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
+                            </ul>
+                        </p>
+                        <p style="background-color: powderblue; padding: 10px;"
+                           invisible="import_operations != 'import_payment_terms'">
+                            <b>Notes: Import Payment Term Process</b>
+                            <ul>
+                                <br/>
+                                <li>Fetched Payment Terms from QuickBooks using API with applied filter.</li>
+                                <li><b>Date Filter :</b> Only Payment Terms created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
+                            </ul>
+                        </p>
+                        <p style="background-color: powderblue; padding: 10px;"
                            invisible="import_operations != 'import_taxes'">
                             <b>Notes: Import Taxes Process</b>
                             <ul>
                                 <br/>
-                                <li>
-                                    To Import Taxes From Quickbooks
-                                </li>
+                                <li>Fetched Taxes from QuickBooks using API with applied filter.</li>
+                                <li><b>Date Filter :</b> Only Taxes created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
                             </ul>
                         </p>
                         <br/>
                         <group>
                             <group>
-                                <field name="quickbook_instance_id" readonly="1"/>
+                                <field name="quickbook_instance_id" invisible="1"/>
                                 <field name="quickbook_operation" widget="radio"/>
                                 <field name="create_records"/>
                                 <field name="import_operations" widget="radio"/>

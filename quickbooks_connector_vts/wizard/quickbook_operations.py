@@ -44,7 +44,7 @@ class QuickbooksOperations(models.TransientModel):
             to_date = self.to_date.strftime('%Y-%m-%dT%H:%M:%S-07:00') if self.to_date else None
 
             if self.import_operations == 'import_customers':
-                customer_info, cust_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(
+                customer_info, cust_status = self.env['quickbooks.api.vts'].get_data_from_qiuckbooks(
                     qck_url,
                     company_id,
                     token,
@@ -82,23 +82,20 @@ class QuickbooksOperations(models.TransientModel):
                                 ['|', ('name', '=', qkb_cust_name), ('email', '=', qkb_cust_email)],limit=1)
 
                             if not partner and self.create_records == True:
-                                country_name = customer.get('BillAddr').get('Country')
-                                country = self.env['res.country'].search([('name', '=', country_name)], limit=1)
-                                state_name = customer.get('BillAddr', {}).get('State')
-                                state = self.env['res.country.state'].search([('name', '=', state_name),
-                                ], limit=1)
                                 self.env['res.partner'].create({
                                     'name' :qkb_cust_name,
-                                    'street':customer.get('BillAddr').get('Line1'),
-                                    'street2':customer.get('BillAddr').get('Line2'),
-                                    'state_id':state.id if state else False,
-                                    'zip':customer.get('BillAddr').get('PostalCode'),
-                                    'country_id':country.id if country else False,
-                                    'city':customer.get('BillAddr').get('City'),
-                                    'mobile':customer.get('PrimaryPhone').get('FreeFormNumber'),
-                                    'email':customer.get('PrimaryEmailAddr').get('Address'),
+                                    'street':'',
+                                    'street2':'',
+                                    'state_id':'',
+                                    'zip':'',
+                                    'country_id':'',
+                                    'city':'',
+                                    'mobile':'',
+                                    'email':'',
                                 })
+                                pass
 
+                        
                         partner_mapping = self.env['qbo.partner.map.vts'].sudo().search(
                             [('quickbook_id', '=', qbo_customer_id)],
                             limit=1
