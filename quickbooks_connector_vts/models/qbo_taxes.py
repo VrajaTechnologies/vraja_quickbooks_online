@@ -5,7 +5,7 @@ class QuickbooksTaxes(models.Model):
 
     _name = 'qbo.taxes.vts'
     _description = "Quickbooks Taxes"
-    _rec_name = "partner_id"
+    _rec_name = "tax_id"
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_tax_id = fields.Char(string="Tax ID")

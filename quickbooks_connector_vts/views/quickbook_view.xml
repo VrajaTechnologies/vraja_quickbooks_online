@@ -123,6 +123,28 @@
                                             <span class="text-muted">Account</span>
                                         </a>
                                     </div>
+                                    <div class="col-4 border-right">
+                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
+                                           type="action"
+                                           class="d-flex flex-column align-items-center">
+                                            <span class="fa-stack fa-lg" title="Orders">
+                                                <i class="fa fa-square-o fa-stack-2x"/>
+                                                <i class="fa fa-file-text-o fa-stack-1x"/>
+                                            </span>
+                                            <span class="text-muted">Taxes</span>
+                                        </a>
+                                    </div>
+                                    <div class="col-4 border-right">
+                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
+                                           type="action"
+                                           class="d-flex flex-column align-items-center">
+                                            <span class="fa-stack fa-lg" title="Orders">
+                                                <i class="fa fa-square-o fa-stack-2x"/>
+                                                <i class="fa fa-money fa-stack-1x"/>
+                                            </span>
+                                            <span class="text-muted">Payment Terms</span>
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-6">

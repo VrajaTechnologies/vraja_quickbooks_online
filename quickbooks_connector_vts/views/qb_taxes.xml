@@ -11,7 +11,7 @@
                         <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_tax_id" readonly="1"/>
                         <field name="quickbook_tax_name" readonly="1"/>
-                        <field name="partner_id"/>
+                        <field name="tax_id"/>
                         <field name="company_id"/>
                         <field name="qbo_response" readonly="1"/>
                     </group>
@@ -27,7 +27,7 @@
                 <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_tax_id" readonly="1"/>
                 <field name="quickbook_tax_name" readonly="1"/>
-                <field name="partner_id"/>
+                <field name="tax_id"/>
                 <button name="taxes_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
         </field>
