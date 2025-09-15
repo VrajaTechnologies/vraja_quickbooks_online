@@ -10,7 +10,7 @@
                         <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_account_id" readonly="1"/>
                         <field name="quickbook_account_name" readonly="1"/>
-                        <field name="accountS_id"/>
+                        <field name="account_id"/>
                         <field name="company_id"/>
                         <field name="qbo_response" readonly="1"/>
                     </group>
@@ -26,7 +26,7 @@
                 <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_account_id" readonly="1"/>
                 <field name="quickbook_account_name" readonly="1"/>
-                <field name="accountS_id"/>
+                <field name="account_id"/>
                 <button name="account_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
         </field>

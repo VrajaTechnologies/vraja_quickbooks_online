@@ -52,40 +52,27 @@ class QuickbooksAPIVts(models.AbstractModel):
         customer_types = customer_types_response.get('QueryResponse', {}).get('CustomerType', [])
         return {ct['Id']: ct['Name'] for ct in customer_types}
 
-    def get_data_from_qiuckbooks(self, qck_url, company_id, token, operation, from_date=None, to_date=None,
-                                 filter=None):
+    def get_data_from_quickbooks(self, qck_url, company_id, token, operation, from_date=None, to_date=None):
+        operation_map = {
+            'import_customers': 'Customer',
+            'import_payment_terms': 'TERM',
+            'import_taxes': 'TaxCode',
+            'import_account': 'Account'
+        }
 
-        if operation == 'import_customers':
-            query = "SELECT * FROM Customer"
-            if from_date and to_date:
-                query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
+        entity = operation_map.get(operation)
 
-            endpoint = f"{company_id}/query"
-            customer_url = f"{qck_url}/{endpoint}?query={query}"
-            customer_info, customer_status = self.qb_get_request(token, customer_url)
+        if not entity:
+            raise UserError(f"Unsupported operation: {operation}")
 
-        elif operation == 'import_payment_terms':
-            query = 'SELECT * FROM TERM'
-            if from_date and to_date:
-                query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
-            endpoint = f"{company_id}/query"
-            customer_url = f"{qck_url}/{endpoint}?query={query}"
-            customer_info, customer_status = self.qb_get_request(token, customer_url)
+        query = f"SELECT * FROM {entity}"
 
-        elif operation == 'import_taxes':
-            query = 'SELECT * FROM TaxCode'
-            if from_date and to_date:
-                query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
-            endpoint = f"{company_id}/query"
-            customer_url = f"{qck_url}/{endpoint}?query={query}"
-            customer_info, customer_status = self.qb_get_request(token, customer_url)
+        if from_date and to_date:
+            query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
 
-        elif operation == "import_account":
-            query = 'SELECT * FROM Account'
-            if from_date and to_date:
-                query += f" WHERE MetaData.CreateTime >= '{from_date}' AND MetaData.CreateTime <= '{to_date}'"
-            endpoint = f"{company_id}/query"
-            customer_url = f"{qck_url}/{endpoint}?query={query}"
-            customer_info, customer_status = self.qb_get_request(token, customer_url)
+        endpoint = f"{company_id}/query"
+        request_url = f"{qck_url}/{endpoint}?query={query}"
 
-        return customer_info, customer_status
+        response_info, response_status = self.qb_get_request(token, request_url)
+
+        return response_info, response_status

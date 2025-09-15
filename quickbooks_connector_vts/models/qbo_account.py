@@ -5,7 +5,7 @@ class QuickbooksAccount(models.Model):
 
     _name = 'qbo.account.vts'
     _description = "Quickbooks Account"
-    _rec_name = "accountS_id"
+    _rec_name = "partner_id"
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_account_id = fields.Char(string="Account ID")

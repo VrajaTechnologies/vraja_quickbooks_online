@@ -49,7 +49,6 @@
                         <group>
                             <group>
                                 <field name="quickbook_instance_id" readonly="1"/>
-                                <field name="create_records"/>
                                 <field name="quickbook_operation" widget="radio"/>
                                 <field name="import_operations" widget="radio"/>
                             </group>
