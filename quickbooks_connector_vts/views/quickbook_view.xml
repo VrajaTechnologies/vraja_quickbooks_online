@@ -22,6 +22,41 @@
                 	<field name="state" widget="statusbar"/>
 	            </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <div>
+                            <button class="oe_stat_button"
+                                    string="Customer"
+                                    type="object"
+                                    icon="fa-users"
+                                    name="customer_smart_button">
+                            </button>
+                        </div>
+                        <div>
+                            <button class="oe_stat_button"
+                                    string="Accounts"
+                                    type="object"
+                                    icon="fa-book"
+                                    name="account_smart_button">
+                            </button>
+                        </div>
+                        <div>
+                            <button class="oe_stat_button"
+                                    string="Payment Terms"
+                                    type="object"
+                                    icon="fa-credit-card"
+                                    name="payment_terms_smart_button">
+                            </button>
+                        </div>
+                        <div>
+                            <button class="oe_stat_button"
+                                    string="Taxes"
+                                    type="object"
+                                    icon="fa-line-chart"
+                                    name="tax_smart_button">
+                            </button>
+                        </div>
+
+                    </div>
                     <group>
                         <group>
                             <field name="name"/>
@@ -29,6 +64,7 @@
                         <group>
                             <field name="qk_company_id" invisible="state != 'connected'"/>
                             <field name="company_id"/>
+                            <field name="country_id" readonly="1"/>
                         </group>
                     </group>
                     <notebook>
@@ -47,6 +83,18 @@
 	                                <field name="quickbook_base_url" invisible="1"/>
 	                                <field name="realm_id" invisible="1"/>
                             	</group>
+                            </group>
+                        </page>
+                        <page name="Import configuration">
+                            <group>
+                                <group>
+                                    <field name="customer_creation"/>
+                                    <field name="account_creation"/>
+                                </group>
+                                <group>
+                                    <field name="payment_term_creation"/>
+                                    <field name="taxes_creation"/>
+                                </group>
                             </group>
                         </page>
                     </notebook>
@@ -101,7 +149,7 @@
                             </div>
                             <div class="container o_kanban_card_content fa-2x">
                                 <div class="row mt10">
-                                    <div class="col-4 border-right">
+                                    <div class="col-4 border-right text-center">
                                         <a name="%(quickbooks_connector_vts.action_quickbook_customer_id)d"
                                            type="action"
                                            class="d-flex flex-column align-items-center">
@@ -110,17 +158,6 @@
                                                 <i class="fa fa-users fa-stack-1x"/>
                                             </span>
                                             <span class="text-muted">Customer</span>
-                                        </a>
-                                    </div>
-                                    <div class="col-4 border-right">
-                                        <a name="%(quickbooks_connector_vts.action_quickbooks_order_id)d"
-                                           type="action"
-                                           class="d-flex flex-column align-items-center">
-                                            <span class="fa-stack fa-lg" title="Orders">
-                                                <i class="fa fa-square-o fa-stack-2x"/>
-                                                <i class="fa fa-line-chart fa-stack-1x"/>
-                                            </span>
-                                            <span class="text-muted">Account</span>
                                         </a>
                                     </div>
                                 </div>

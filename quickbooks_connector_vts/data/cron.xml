@@ -10,5 +10,11 @@
             <field name="interval_type">minutes</field>
             <field name="active">True</field>
         </record>
+        <record id="seq_account_code" model="ir.sequence">
+            <field name="name">Quickbook Account Code</field>
+            <field name="code">account.account</field>
+            <field name="prefix">QB</field>
+            <field name="padding">3</field>
+        </record>
     </data>
 </odoo>

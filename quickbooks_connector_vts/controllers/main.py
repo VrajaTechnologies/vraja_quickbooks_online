@@ -58,19 +58,26 @@ class QuickbookAuthController(http.Controller):
 
             if cmp_status == 200 and company_info:
                 company_data = company_info.get('CompanyInfo', {})
+                cmp_country_code = company_data.get('Country', '')
+                qck_country_id = False
+                if cmp_country_code:
+                    qck_country_id = request.env['res.country'].search([('code','=', cmp_country_code)], limit=1)
                 company_vals = {
                     'name': company_data.get('CompanyName', ''),
                     'quickbook_ID': realm_id,
                     'company_email': company_data.get('Email', ''),
+                    'company_response': company_info,
                 }
 
-                qkb_company = qkb_company_obj.search([('quickbook_ID', '=', realm_id)], limit=1)
+                qkb_company = qkb_company_obj.sudo().search([('quickbook_ID', '=', realm_id)], limit=1)
 
                 if qkb_company:
                     qkb_company.write(company_vals)
                     quickbook_connect.qk_company_id = qkb_company.id
+                    quickbook_connect.country_id = qck_country_id.id if qck_country_id else False
                 else:
                     qk_company_id = qkb_company_obj.create(company_vals)
                     quickbook_connect.qk_company_id = qk_company_id.id
+                    quickbook_connect.country_id = qck_country_id.id if qck_country_id else False
                     
         return redirect(f"/web#id={quickbook_connect.id}&model=quickbooks.connect&view_type=form")

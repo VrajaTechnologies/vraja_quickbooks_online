@@ -6,7 +6,15 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='category_id']" position="after">
-                <field name="qck_instance_id"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="quickbook_api" string="Quickbooks">
+                    <group>
+                        <field name="qck_instance_id"/>
+                        <field name="qk_customer_type" readonly="1"/>
+                        <field name="qbk_id" readonly="1"/>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>

@@ -11,3 +11,4 @@ class QuickbooksCompany(models.Model):
     name = fields.Char(string="Name")
     quickbook_ID = fields.Char(string="Quickbook Company ID")
     company_email = fields.Char(string="Quickbook Company Email")
+    company_response = fields.Text(string="Company Response")

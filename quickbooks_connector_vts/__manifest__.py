@@ -22,6 +22,7 @@
         'views/qb_partner_mapping.xml',
         'views/quickbooks_log.xml',
         'views/partner_view.xml',
+        'views/account_account.xml',
     ],
 
     # Author

@@ -6,6 +6,9 @@ class Account(models.Model):
 	_inherit = "account.account"
 
 	qck_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance",copy=False)
+	quickbooks_id = fields.Char(string="Quickbook ID",copy=False)
+	qk_classification = fields.Char(string="Classification")
+	qk_accountsubType = fields.Char(string="Account SubType")
 
 class PaymentTerms(models.Model):
 
@@ -13,8 +16,8 @@ class PaymentTerms(models.Model):
 
 	qck_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance",copy=False)
 
-class PaymentTerms(models.Model):
+class Taxes(models.Model):
 
-	_inherit = 'account.payment.term'
+	_inherit = 'account.tax'
 
-	qck_instance_id = fields.Many2one('account.tax',string="Quickbook Instance",copy=False)
+	qck_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance",copy=False)

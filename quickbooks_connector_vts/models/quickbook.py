@@ -24,6 +24,11 @@ class QuickbooksConnect(models.Model):
     reason = fields.Text(string="Reason")
     quickbook_base_url = fields.Char(string="URL")
     company_id = fields.Many2one('res.company',string="Company",default=lambda self: self.env.user.company_id)
+    country_id = fields.Many2one('res.country',string="Country",copy=False)
+    customer_creation = fields.Boolean(string="Customer Creation",help="Enable this option to create a customer if does not exist when importing.")
+    account_creation = fields.Boolean(string="Chart Of Account Creation",help="Enable this option to create a chart of account if does not exist when importing.")
+    payment_term_creation = fields.Boolean(string="Payment Terms Creation",help="Enable this option to create a payment terms if does not exist when importing.")
+    taxes_creation = fields.Boolean(string="Taxes Creation",help="Enable this option to create a taxes if does not exist when importing.")
 
     def action_quickbook_open_instance_view_form(self):
         form_id = self.sudo().env.ref('quickbooks_connector_vts.quickbooks_connect_form_view')
@@ -96,3 +101,44 @@ class QuickbooksConnect(models.Model):
                     rec.write({"reason": response.text})
             except requests.exceptions.RequestException as e:
                 rec.write({"reason": str(e)})
+
+    def customer_smart_button(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Customer',
+            'view_mode': 'list',
+            'res_model': 'qbo.partner.map.vts',
+            'domain':[('quickbook_instance_id', '=', self.name)],
+            'context': "{'create': False}"
+        }
+
+    def account_smart_button(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Accounts',
+            'view_mode': 'list',
+            'res_model': 'qbo.account.vts',
+            'domain': [('quickbook_instance_id', '=', self.name)],
+            'context': "{'create': False}"
+        }
+
+    def payment_terms_smart_button(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Payment Terms',
+            'view_mode': 'list',
+            'res_model': 'qbo.payment.terms.vts',
+            'domain': [('quickbook_instance_id', '=', self.name)],
+            'context': "{'create': False}"
+        }
+
+    def tax_smart_button(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Taxes',
+            'view_mode': 'list',
+            'res_model': 'qbo.taxes.vts',
+            'domain': [('quickbook_instance_id', '=', self.name)],
+            'context': "{'create': False}"
+        }
