@@ -217,7 +217,7 @@ class QuickbooksOperations(models.TransientModel):
                 if qkb_account_name:
                     accounts_detail = self.env['account.account'].sudo().search([('name', '=', qkb_account_name)], limit=1)
 
-                if not accounts_detail and self.quickbook_instance_id and self.quickbook_instance_id.account_creation:
+                if not accounts_detail and self.quickbook_instance_id.account_creation:
                     accounts_detail = self.qk_account_creation(account)
 
                 account_mapping = self.env['qbo.account.vts'].sudo().search([('quickbook_account_id', '=', qbo_account_id)],limit=1)
@@ -290,10 +290,23 @@ class QuickbooksOperations(models.TransientModel):
 
                 payment_terms = False
                 if qkb_payment_name:
-                    payment_terms = self.env['account.payment.term'].sudo().search([('name', '=', qkb_payment_name)], limit=1)
+                    payment_terms = self.env['account.payment.term'].sudo().search(['|',('name', '=', qkb_payment_name),('qck_payment_terms_ID', '=', qbo_payment_id)], limit=1)
 
-                payment_term_mapping = self.env['qbo.payment.terms.vts'].sudo().search(
-                    [('quickbook_payment_id', '=', qbo_payment_id)],limit=1)
+                if not payment_terms and self.quickbook_instance_id.payment_term_creation:
+                    if term.get('Type') == 'DATE_DRIVEN':
+                        line_ids = [(0, 0, {'delay_type': 'days_end_of_month_on_the', 'days_next_month': term.get('DayOfMonthDue', 1)})]
+                    else:
+                        line_ids = [(0, 0, {'delay_type': 'days_after', 'nb_days': term.get('DueDays', 0)})]
+                    term_vals = {
+                        'name': qkb_payment_name,
+                        'qck_payment_terms_ID': qbo_payment_id,
+                        'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'line_ids': line_ids,
+                        'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+                    }
+                    payment_terms = self.env['account.payment.term'].sudo().create(term_vals)
+
+                payment_term_mapping = self.env['qbo.payment.terms.vts'].sudo().search([('quickbook_payment_id', '=', qbo_payment_id)],limit=1)
 
                 if not payment_term_mapping:
                     mapping_vals = {
@@ -317,7 +330,8 @@ class QuickbooksOperations(models.TransientModel):
                         }
                         qkb_map_term_log_ln.append(term_log_val)
                     elif payment_terms:
-                        payment_terms.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                        if not payment_terms.qck_instance_id:
+                            payment_terms.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
                         term_log_val = {
                             'quickbooks_operation_name': 'payment_term',
                             'quickbooks_operation_type': 'import',
@@ -346,7 +360,68 @@ class QuickbooksOperations(models.TransientModel):
                 quickbooks_operation_message='Error during payment term import process',
                 process_response_message=pprint.pformat(payment_info),log_id=log_id,fault_operation=True)
 
-    def get_taxes_from_quickbooks(self, tax_info,tax_status):
+    def qk_tax_creation(self, tax, qck_url, company_id, token):
+        
+        tax_obj = self.env['account.tax']
+
+        taxrate_map = self.env['quickbooks.api.vts'].sudo().get_tax_rates(qck_url, company_id, token)
+        tax_group = self.env['account.tax.group'].sudo().search([('name', '=', 'QuickbookTax')], limit=1)
+        if not tax_group:
+            tax_group = self.env['account.tax.group'].sudo().create({'name': 'QuickbookTax','country_id':self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False})
+
+        if 'TaxGroup' in tax and tax.get('TaxGroup'):
+            tax_vals = {
+                'name': tax.get('Name', ''),
+                'description': tax.get('Description', ''),
+                'qck_taxes_ID': tax.get('Id'),
+                'amount': 0,
+                'amount_type': 'group',
+                'tax_group_id': tax_group.id,
+                'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False}
+
+            # Make two different taxes for purchase and sale tax
+            if tax.get('PurchaseTaxRateList').get('TaxRateDetail', []):
+                purchase_tax_rate_ids = []
+                for tax_rate in tax.get('PurchaseTaxRateList').get('TaxRateDetail', []):
+                    tax_rate_id = tax_rate['TaxRateRef']['value']
+                    rate_info = taxrate_map.get(tax_rate_id)
+                    if rate_info:
+                        child_tax = tax_obj.sudo().create({
+                            'name': rate_info['name'],
+                            'amount': rate_info['rateValue'],
+                            'amount_type': 'percent',
+                            'type_tax_use': 'purchase',
+                        })
+                    purchase_tax_rate_ids.append(child_tax.id)
+                tax_vals.update({
+                    'type_tax_use': 'purchase',
+                    'children_tax_ids': [(6, 0, purchase_tax_rate_ids)],
+                })
+                tax_detail = tax_obj.sudo().create(tax_vals)
+
+            if tax.get('SalesTaxRateList').get('TaxRateDetail', []):
+                sale_tax_rate_ids = []
+                for tax_rate in tax.get('SalesTaxRateList').get('TaxRateDetail', []):
+                    tax_rate_id = tax_rate['TaxRateRef']['value']
+                    rate_info = taxrate_map.get(tax_rate_id)
+                    if rate_info:
+                        child_tax = tax_obj.sudo().create({
+                            'name': rate_info['name'],
+                            'amount': rate_info['rateValue'],
+                            'amount_type': 'percent',
+                            'type_tax_use': 'sale',
+                        })
+                        sale_tax_rate_ids.append(child_tax.id)
+                tax_vals.update({
+                    'type_tax_use': 'sale',
+                    'children_tax_ids': [(6, 0, sale_tax_rate_ids)],})
+                tax_detail = tax_obj.sudo().create(tax_vals)
+
+        return tax_detail
+
+    def get_taxes_from_quickbooks(self, tax_info, tax_status, qck_url, company_id, token):
 
         if tax_status == 200 and tax_info and 'QueryResponse' in tax_info:
             taxes = tax_info.get('QueryResponse', {}).get('TaxCode', [])
@@ -363,11 +438,13 @@ class QuickbooksOperations(models.TransientModel):
 
                 tax_detail = False
                 if qkb_tax_name:
-                    tax_detail = self.env['account.tax'].sudo().search(
-                        [('name', '=', qkb_tax_name)], limit=1)
+                    tax_detail = self.env['account.tax'].sudo().search(['|',('name', '=', qkb_tax_name),('qck_taxes_ID', '=', qbo_tax_id)], limit=1)
 
-                tax_mapping = self.env['qbo.taxes.vts'].sudo().search(
-                    [('quickbook_tax_id', '=', qbo_tax_id)],limit=1)
+                if not tax_detail and self.quickbook_instance_id.taxes_creation:
+                    if 'Active' in tax and tax.get('Active') and tax.get('Taxable'):
+                        tax_detail = self.qk_tax_creation(tax, qck_url, company_id, token)
+
+                tax_mapping = self.env['qbo.taxes.vts'].sudo().search([('quickbook_tax_id', '=', qbo_tax_id)],limit=1)
                 if not tax_mapping:
                     mapping_vals = {
                         'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
@@ -390,7 +467,8 @@ class QuickbooksOperations(models.TransientModel):
                         }
                         qkb_map_taxes_log_ln.append(taxes_log_val)
                     elif tax_detail:
-                        tax_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                        if not tax_detail.qck_instance_id:
+                            tax_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
                         taxes_log_val = {
                             'quickbooks_operation_name': 'taxes',
                             'quickbooks_operation_type': 'import',
@@ -450,4 +528,4 @@ class QuickbooksOperations(models.TransientModel):
                 tax_info, tax_status = self.env['quickbooks.api.vts'].get_data_from_quickbooks(qck_url,company_id,
                     token,self.import_operations,from_date=from_date,to_date=to_date)
 
-                qk_taxes_details = self.get_taxes_from_quickbooks(tax_info, tax_status)
+                qk_taxes_details = self.get_taxes_from_quickbooks(tax_info, tax_status, qck_url, company_id, token)

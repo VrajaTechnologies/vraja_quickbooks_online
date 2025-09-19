@@ -43,6 +43,19 @@ class QuickbooksAPIVts(models.AbstractModel):
         except requests.exceptions.RequestException as e:
             raise UserError(f"Request Error: {str(e)}")
 
+    def get_tax_rates(self, qck_url, company_id, token):
+        query = "SELECT * FROM TaxRate"
+        endpoint = f"{company_id}/query"
+        url = f"{qck_url}/{endpoint}?query={query}"
+
+        tax_rate_response, status = self.qb_get_request(token, url)
+        tax_rates = tax_rate_response.get('QueryResponse', {}).get('TaxRate', [])
+        
+        return {
+            tr['Id']: {"name": tr.get('Name'),
+                        "rateValue": tr.get('RateValue'),
+                        "agency": tr.get('AgencyRef', {}).get('value')} for tr in tax_rates}
+
     def get_customer_types(self, qck_url, company_id, token):
         query = "SELECT * FROM CustomerType"
         endpoint = f"{company_id}/query"

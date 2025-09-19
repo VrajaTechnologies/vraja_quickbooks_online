@@ -23,39 +23,50 @@
 	            </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <div>
-                            <button class="oe_stat_button"
-                                    string="Customer"
-                                    type="object"
-                                    icon="fa-users"
-                                    name="customer_smart_button">
-                            </button>
-                        </div>
-                        <div>
-                            <button class="oe_stat_button"
-                                    string="Accounts"
-                                    type="object"
-                                    icon="fa-book"
-                                    name="account_smart_button">
-                            </button>
-                        </div>
-                        <div>
-                            <button class="oe_stat_button"
-                                    string="Payment Terms"
-                                    type="object"
-                                    icon="fa-credit-card"
-                                    name="payment_terms_smart_button">
-                            </button>
-                        </div>
-                        <div>
-                            <button class="oe_stat_button"
-                                    string="Taxes"
-                                    type="object"
-                                    icon="fa-line-chart"
-                                    name="tax_smart_button">
-                            </button>
-                        </div>
-
+                        <button name="action_qck_customer"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-user">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Customer</span>
+                                <span class="o_stat_value">
+                                    <field name="qck_customer_count"/>
+                                </span>
+                            </div>
+                        </button>
+                        <button name="action_qck_account"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-book">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Accounts</span>
+                                <span class="o_stat_value">
+                                    <field name="qck_account_count"/>
+                                </span>
+                            </div>
+                        </button>
+                        <button name="action_qck_taxes"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-dollar">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Taxes</span>
+                                <span class="o_stat_value">
+                                    <field name="qck_taxes_count"/>
+                                </span>
+                            </div>
+                        </button>
+                        <button name="action_qck_payment_terms"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-dollar">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Payment Terms</span>
+                                <span class="o_stat_value">
+                                    <field name="qck_payment_term_count"/>
+                                </span>
+                            </div>
+                        </button>
                     </div>
                     <group>
                         <group>

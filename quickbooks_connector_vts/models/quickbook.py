@@ -29,6 +29,10 @@ class QuickbooksConnect(models.Model):
     account_creation = fields.Boolean(string="Chart Of Account Creation",help="Enable this option to create a chart of account if does not exist when importing.")
     payment_term_creation = fields.Boolean(string="Payment Terms Creation",help="Enable this option to create a payment terms if does not exist when importing.")
     taxes_creation = fields.Boolean(string="Taxes Creation",help="Enable this option to create a taxes if does not exist when importing.")
+    qck_customer_count = fields.Integer(string="Customer Counts", compute='_compute_customer_count')
+    qck_payment_term_count = fields.Integer(string="Payment Terms Counts", compute='_compute_payment_term_count')
+    qck_account_count = fields.Integer(string="Account Counts", compute='_compute_account_count')
+    qck_taxes_count = fields.Integer(string="Taxes Count", compute='_compute_taxes_count')
 
     def action_quickbook_open_instance_view_form(self):
         form_id = self.sudo().env.ref('quickbooks_connector_vts.quickbooks_connect_form_view')
@@ -102,43 +106,43 @@ class QuickbooksConnect(models.Model):
             except requests.exceptions.RequestException as e:
                 rec.write({"reason": str(e)})
 
-    def customer_smart_button(self):
+    def _compute_customer_count(self):
+        for rec in self:
+            rec.qck_customer_count = self.env['res.partner'].search_count([('qck_instance_id', '=', rec.id)])
+
+    def _compute_account_count(self):
+        for rec in self:
+            rec.qck_account_count = self.env['account.account'].search_count([('qck_instance_id', '=', rec.id)])
+
+    def _compute_payment_term_count(self):
+        for rec in self:
+            rec.qck_payment_term_count = self.env['account.payment.term'].search_count([('qck_instance_id', '=', rec.id)])
+
+    def _compute_taxes_count(self):
+        for rec in self:
+            rec.qck_taxes_count = self.env['account.tax'].search_count([('qck_instance_id', '=', rec.id)])
+
+    def action_qck_customer(self):
         self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Customer',
-            'view_mode': 'list',
-            'res_model': 'qbo.partner.map.vts',
-            'domain':[('quickbook_instance_id', '=', self.name)],
-            'context': "{'create': False}"
-        }
+        action = self.env["ir.actions.actions"]._for_xml_id("account.res_partner_action_customer")
+        action['domain'] = [('qck_instance_id', '=', self.id)]
+        return action
 
-    def account_smart_button(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Accounts',
-            'view_mode': 'list',
-            'res_model': 'qbo.account.vts',
-            'domain': [('quickbook_instance_id', '=', self.name)],
-            'context': "{'create': False}"
-        }
+    def action_qck_account(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_form")
+        action['domain'] = [('qck_instance_id', '=', self.id)]
+        return action
 
-    def payment_terms_smart_button(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Payment Terms',
-            'view_mode': 'list',
-            'res_model': 'qbo.payment.terms.vts',
-            'domain': [('quickbook_instance_id', '=', self.name)],
-            'context': "{'create': False}"
-        }
+    def action_qck_taxes(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_tax_form")
+        action['domain'] = [('qck_instance_id', '=', self.id)]
+        return action
 
-    def tax_smart_button(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Taxes',
-            'view_mode': 'list',
-            'res_model': 'qbo.taxes.vts',
-            'domain': [('quickbook_instance_id', '=', self.name)],
-            'context': "{'create': False}"
-        }
+    def action_qck_payment_terms(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_payment_term_form")
+        action['domain'] = [('qck_instance_id', '=', self.id)]
+        return action
+
