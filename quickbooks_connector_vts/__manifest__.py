@@ -23,6 +23,8 @@
         'views/quickbooks_log.xml',
         'views/partner_view.xml',
         'views/account_account.xml',
+        'views/payment_term_view.xml',
+        'views/taxes_view.xml',
     ],
 
     # Author
