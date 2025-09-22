@@ -361,13 +361,17 @@ class QuickbooksOperations(models.TransientModel):
                 process_response_message=pprint.pformat(payment_info),log_id=log_id,fault_operation=True)
 
     def qk_tax_creation(self, tax, qck_url, company_id, token):
-        
+
         tax_obj = self.env['account.tax']
 
         taxrate_map = self.env['quickbooks.api.vts'].sudo().get_tax_rates(qck_url, company_id, token)
         tax_group = self.env['account.tax.group'].sudo().search([('name', '=', 'QuickbookTax')], limit=1)
         if not tax_group:
-            tax_group = self.env['account.tax.group'].sudo().create({'name': 'QuickbookTax','country_id':self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False})
+            tax_group = self.env['account.tax.group'].sudo().create({
+                'name': 'QuickbookTax',
+                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False})
+
+        tax_detail = False
 
         if 'TaxGroup' in tax and tax.get('TaxGroup'):
             tax_vals = {
@@ -379,45 +383,79 @@ class QuickbooksOperations(models.TransientModel):
                 'tax_group_id': tax_group.id,
                 'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                 'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
-                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False}
+                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
+            }
 
-            # Make two different taxes for purchase and sale tax
-            if tax.get('PurchaseTaxRateList').get('TaxRateDetail', []):
+            # ---------- Purchase Taxes ----------
+            if tax.get('PurchaseTaxRateList') and tax['PurchaseTaxRateList'].get('TaxRateDetail', []):
                 purchase_tax_rate_ids = []
-                for tax_rate in tax.get('PurchaseTaxRateList').get('TaxRateDetail', []):
+                for tax_rate in tax['PurchaseTaxRateList']['TaxRateDetail']:
                     tax_rate_id = tax_rate['TaxRateRef']['value']
                     rate_info = taxrate_map.get(tax_rate_id)
-                    if rate_info:
+                    if not rate_info:
+                        continue
+    
+                    child_tax = tax_obj.sudo().search([
+                        ('name', '=', f"{rate_info['name']} Purchase"),
+                        ('type_tax_use', '=', 'purchase'),
+                        ('company_id', '=', self.quickbook_instance_id.company_id.id)
+                    ], limit=1)
+
+                    if not child_tax:
                         child_tax = tax_obj.sudo().create({
-                            'name': rate_info['name'],
+                            'name': f"{rate_info['name']} Purchase",
                             'amount': rate_info['rateValue'],
                             'amount_type': 'percent',
                             'type_tax_use': 'purchase',
+                            'tax_group_id': tax_group.id,
+                            'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
                         })
                     purchase_tax_rate_ids.append(child_tax.id)
-                tax_vals.update({
-                    'type_tax_use': 'purchase',
-                    'children_tax_ids': [(6, 0, purchase_tax_rate_ids)],
-                })
-                tax_detail = tax_obj.sudo().create(tax_vals)
 
-            if tax.get('SalesTaxRateList').get('TaxRateDetail', []):
+                if purchase_tax_rate_ids:
+                    vals = tax_vals.copy()
+                    vals.update({
+                        'type_tax_use': 'purchase',
+                        'children_tax_ids': [(6, 0, purchase_tax_rate_ids)],
+                    })
+                    tax_detail = tax_obj.sudo().create(vals)
+
+            # ---------- Sales Taxes ----------
+            if tax.get('SalesTaxRateList') and tax['SalesTaxRateList'].get('TaxRateDetail', []):
                 sale_tax_rate_ids = []
-                for tax_rate in tax.get('SalesTaxRateList').get('TaxRateDetail', []):
+                for tax_rate in tax['SalesTaxRateList']['TaxRateDetail']:
                     tax_rate_id = tax_rate['TaxRateRef']['value']
                     rate_info = taxrate_map.get(tax_rate_id)
-                    if rate_info:
+                    if not rate_info:
+                        continue
+
+                    # Search existing sale tax
+                    child_tax = tax_obj.sudo().search([
+                        ('name', '=', f"{rate_info['name']} Sale"),
+                        ('type_tax_use', '=', 'sale'),
+                        ('company_id', '=', self.quickbook_instance_id.company_id.id)
+                    ], limit=1)
+
+                    if not child_tax:
                         child_tax = tax_obj.sudo().create({
-                            'name': rate_info['name'],
+                            'name': f"{rate_info['name']} Sale",
                             'amount': rate_info['rateValue'],
                             'amount_type': 'percent',
                             'type_tax_use': 'sale',
+                            'tax_group_id': tax_group.id,
+                            'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
                         })
-                        sale_tax_rate_ids.append(child_tax.id)
-                tax_vals.update({
-                    'type_tax_use': 'sale',
-                    'children_tax_ids': [(6, 0, sale_tax_rate_ids)],})
-                tax_detail = tax_obj.sudo().create(tax_vals)
+                    sale_tax_rate_ids.append(child_tax.id)
+
+                if sale_tax_rate_ids:
+                    vals = tax_vals.copy()
+                    vals.update({
+                        'type_tax_use': 'sale',
+                        'children_tax_ids': [(6, 0, sale_tax_rate_ids)],
+                    })
+                    tax_detail = tax_obj.sudo().create(vals)
 
         return tax_detail
 
@@ -432,7 +470,8 @@ class QuickbooksOperations(models.TransientModel):
 
             quickbook_map_taxes = []
             qkb_map_taxes_log_ln = []
-            for tax in taxes:
+            active_taxes = [tax for tax in taxes if tax.get('Active') is True]
+            for tax in active_taxes:
                 qkb_tax_name = tax.get('Name','')
                 qbo_tax_id = tax.get('Id', '')
 
