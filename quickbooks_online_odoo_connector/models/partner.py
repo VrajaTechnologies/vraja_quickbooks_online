@@ -12,7 +12,7 @@ class ResPartner(models.Model):
     qbk_vendor_id = fields.Char("QuickBooks Vendor ID")
     error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
 
-    def export_to_quickbooks(self):
+    def export_customer_to_quickbooks(self):
         for partner in self:
             if partner.customer_rank > 0:
                 endpoint = "customer"

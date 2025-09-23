@@ -1,20 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="view_quickbooks_wizard_form_inherit" model="ir.ui.view">
         <field name="name">quickbooks.wizard.form.inherit</field>
         <field name="model">quickbooks.operations</field>
         <field name="inherit_id" ref="quickbooks_connector_vts.quickbooks_operations_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='import_operations']" position="after">
-<!--                 <p style="background-color: powderblue; padding: 10px;"-->
-<!--                           invisible="import_operations != 'import_product'">-->
-<!--                            <b>Notes: Import Product Process</b>-->
-<!--                            <ul>-->
-<!--                                <br/>-->
-<!--                                <li>Fetched product from QuickBooks using API with applied filter.</li>-->
-<!--                                <li><b>Date Filter :</b> Only product created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>-->
-<!--                            </ul>-->
-<!--                 </p>-->
-                <field name="import_operations"/>
+            <xpath expr="//sheet/group" position="before">
+                <p style="background-color: powderblue; padding: 10px;" invisible="import_operations != 'import_product'">
+                    <b>Notes: Import Product Process</b>
+                    <ul>
+                        <li>Fetched product from QuickBooks using API with applied filter.</li>
+                        <li><b>Date Filter :</b> Only product created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
+                    </ul>
+                </p>
             </xpath>
         </field>
     </record>

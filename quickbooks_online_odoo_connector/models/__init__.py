@@ -5,3 +5,4 @@ from . import quickbook_log
 from . import qbo_product_map
 from . import partner
 from . import product
+from . import account_move
