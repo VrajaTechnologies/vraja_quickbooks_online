@@ -103,8 +103,11 @@ class QuickbooksOperations(models.TransientModel):
                 if not partner and qkb_cust_name:
                     partner = self.env['res.partner'].sudo().search([('name', '=', qkb_cust_name),('email', '=', qkb_cust_email)],limit=1)
 
+                cst_create = False
                 if not partner and self.quickbook_instance_id and self.quickbook_instance_id.customer_creation:
                     partner = self.qk_customer_creation(customer, customer_type_map)
+                    if partner:
+                        cst_create = True
 
                 partner_mapping = self.env['qbo.partner.map.vts'].sudo().search(
                     [('quickbook_id', '=', qbo_customer_id)],limit=1)
@@ -124,7 +127,7 @@ class QuickbooksOperations(models.TransientModel):
                             'quickbooks_operation_name': 'customer',
                             'quickbooks_operation_type': 'import',
                             'qkb_instance_id': instance_id,
-                            'quickbooks_operation_message': f"Partner doesn't match with QuickBooks customer: {qkb_cust_name}",
+                            'quickbooks_operation_message': f"Customer doesn't match with QuickBooks customer: {qkb_cust_name}",
                             'process_response_message': pprint.pformat(customer),
                             'quickbooks_operation_id': log_id.id if log_id else False,
                             'fault_operation': True
@@ -132,11 +135,14 @@ class QuickbooksOperations(models.TransientModel):
                         qkb_map_customer_log_ln.append(customer_log_val)
                     elif partner:
                         partner.write({'qck_instance_id':instance_id,'qbk_id':qbo_customer_id})
+                        opr_msg = f"Partner successfully mapped with QuickBooks customer: {qkb_cust_name}"
+                        if cst_create:
+                            opr_msg = f"Customer successfully created and mapped with QuickBooks customer: {qkb_cust_name}"
                         customer_log_val = {
                             'quickbooks_operation_name': 'customer',
                             'quickbooks_operation_type': 'import',
                             'qkb_instance_id': instance_id,
-                            'quickbooks_operation_message': f"Partner successfully mapped with QuickBooks customer: {qkb_cust_name}",
+                            'quickbooks_operation_message':opr_msg ,
                             'process_response_message': pprint.pformat(customer),
                             'quickbooks_operation_id': log_id.id if log_id else False,
                         }
@@ -146,9 +152,19 @@ class QuickbooksOperations(models.TransientModel):
                         'partner_id': partner.id if partner else False,
                         'qbo_response': pprint.pformat(customer)}
                     partner_mapping.sudo().write(mapping_vals)
+                    customer_log_val = {
+                            'quickbooks_operation_name': 'customer',
+                            'quickbooks_operation_type': 'import',
+                            'qkb_instance_id': instance_id,
+                            'quickbooks_operation_message': f"Partner updated with QuickBooks customer: {qkb_cust_name}",
+                            'process_response_message': pprint.pformat(customer),
+                            'quickbooks_operation_id': log_id.id if log_id else False,
+                        }
+                    qkb_map_customer_log_ln.append(customer_log_val)
             
             if quickbook_map_customers:
                 partner_mapped = self.env['qbo.partner.map.vts'].sudo().create(quickbook_map_customers)
+            if qkb_map_customer_log_ln:
                 customer_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_customer_log_ln)
         else:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name='customer',
@@ -217,8 +233,11 @@ class QuickbooksOperations(models.TransientModel):
                 if qkb_account_name:
                     accounts_detail = self.env['account.account'].sudo().search([('name', '=', qkb_account_name)], limit=1)
 
+                acc_create = False
                 if not accounts_detail and self.quickbook_instance_id.account_creation:
                     accounts_detail = self.qk_account_creation(account)
+                    if accounts_detail:
+                        acc_create = True
 
                 account_mapping = self.env['qbo.account.vts'].sudo().search([('quickbook_account_id', '=', qbo_account_id)],limit=1)
 
@@ -246,11 +265,14 @@ class QuickbooksOperations(models.TransientModel):
                     elif accounts_detail:
                         accounts_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                                                 'quickbooks_id':qbo_account_id})
+                        opr_msg = f"Chart of Account successfully mapped with QuickBooks Account: {qkb_account_name}"
+                        if acc_create:
+                            opr_msg = f"Chart of Account successfully created and mapped with QuickBooks Account: {qkb_account_name}"
                         account_log_val = {
                             'quickbooks_operation_name': 'account',
                             'quickbooks_operation_type': 'import',
                             'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'quickbooks_operation_message': f"Chart of Account successfully mapped with QuickBooks Account: {qkb_account_name}",
+                            'quickbooks_operation_message': opr_msg,
                             'process_response_message': pprint.pformat(account),
                             'quickbooks_operation_id': log_id.id if log_id else False,
                         }
@@ -261,9 +283,19 @@ class QuickbooksOperations(models.TransientModel):
                         'qbo_response': pprint.pformat(account),
                     }
                     account_mapping.sudo().write(mapping_vals)
+                    account_log_val = {
+                            'quickbooks_operation_name': 'account',
+                            'quickbooks_operation_type': 'import',
+                            'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'quickbooks_operation_message': f"Chart of Account updated with QuickBooks Account: {qkb_account_name}",
+                            'process_response_message': pprint.pformat(account),
+                            'quickbooks_operation_id': log_id.id if log_id else False,
+                        }
+                    qkb_map_account_log_ln.append(account_log_val)
 
             if quickbook_map_account:
                 account_mapped = self.env['qbo.account.vts'].sudo().create(quickbook_map_account)
+            if qkb_map_account_log_ln:
                 account_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_account_log_ln)
         else:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name='account',
@@ -292,6 +324,7 @@ class QuickbooksOperations(models.TransientModel):
                 if qkb_payment_name:
                     payment_terms = self.env['account.payment.term'].sudo().search(['|',('name', '=', qkb_payment_name),('qck_payment_terms_ID', '=', qbo_payment_id)], limit=1)
 
+                term_create = False
                 if not payment_terms and self.quickbook_instance_id.payment_term_creation:
                     if term.get('Type') == 'DATE_DRIVEN':
                         line_ids = [(0, 0, {'delay_type': 'days_end_of_month_on_the', 'days_next_month': term.get('DayOfMonthDue', 1)})]
@@ -305,6 +338,8 @@ class QuickbooksOperations(models.TransientModel):
                         'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
                     }
                     payment_terms = self.env['account.payment.term'].sudo().create(term_vals)
+                    if payment_terms:
+                        term_create = True
 
                 payment_term_mapping = self.env['qbo.payment.terms.vts'].sudo().search([('quickbook_payment_id', '=', qbo_payment_id)],limit=1)
 
@@ -332,11 +367,14 @@ class QuickbooksOperations(models.TransientModel):
                     elif payment_terms:
                         if not payment_terms.qck_instance_id:
                             payment_terms.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                        opr_msg = f"Payment Terms successfully mapped with QuickBooks Terms: {qkb_payment_name}"
+                        if term_create:
+                            opr_msg = f"Payment Terms successfully created and mapped with QuickBooks Terms: {qkb_payment_name}"
                         term_log_val = {
                             'quickbooks_operation_name': 'payment_term',
                             'quickbooks_operation_type': 'import',
                             'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'quickbooks_operation_message': f"Payment Terms successfully mapped with QuickBooks Terms: {qkb_payment_name}",
+                            'quickbooks_operation_message': opr_msg,
                             'process_response_message': pprint.pformat(term),
                             'quickbooks_operation_id': log_id.id if log_id else False,
                         }
@@ -347,9 +385,19 @@ class QuickbooksOperations(models.TransientModel):
                         'qbo_response': pprint.pformat(term),
                     }
                     payment_term_mapping.sudo().write(mapping_vals)
+                    term_log_val = {
+                            'quickbooks_operation_name': 'payment_term',
+                            'quickbooks_operation_type': 'import',
+                            'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'quickbooks_operation_message': f"Payment Terms updated with QuickBooks Terms: {qkb_payment_name}",
+                            'process_response_message': pprint.pformat(term),
+                            'quickbooks_operation_id': log_id.id if log_id else False,
+                        }
+                    qkb_map_term_log_ln.append(term_log_val)
 
             if quickbook_map_payment_term:
                 terms_mapped = self.env['qbo.payment.terms.vts'].sudo().create(quickbook_map_payment_term)
+            if qkb_map_term_log_ln:
                 terms_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_term_log_ln)
         else:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name='payment_term',
@@ -479,9 +527,12 @@ class QuickbooksOperations(models.TransientModel):
                 if qkb_tax_name:
                     tax_detail = self.env['account.tax'].sudo().search(['|',('name', '=', qkb_tax_name),('qck_taxes_ID', '=', qbo_tax_id)], limit=1)
 
+                tax_created = False
                 if not tax_detail and self.quickbook_instance_id.taxes_creation:
                     if 'Active' in tax and tax.get('Active') and tax.get('Taxable'):
                         tax_detail = self.qk_tax_creation(tax, qck_url, company_id, token)
+                        if tax_detail:
+                            tax_created = True
 
                 tax_mapping = self.env['qbo.taxes.vts'].sudo().search([('quickbook_tax_id', '=', qbo_tax_id)],limit=1)
                 if not tax_mapping:
@@ -508,11 +559,14 @@ class QuickbooksOperations(models.TransientModel):
                     elif tax_detail:
                         if not tax_detail.qck_instance_id:
                             tax_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                        opr_msg = f"Taxes successfully mapped with QuickBooks Taxes: {qkb_tax_name}"
+                        if tax_created:
+                            opr_msg = f"Taxes successfully created and mapped with QuickBooks Taxes: {qkb_tax_name}"      
                         taxes_log_val = {
                             'quickbooks_operation_name': 'taxes',
                             'quickbooks_operation_type': 'import',
                             'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'quickbooks_operation_message': f"Taxes successfully mapped with QuickBooks Taxes: {qkb_tax_name}",
+                            'quickbooks_operation_message': opr_msg,
                             'process_response_message': pprint.pformat(tax),
                             'quickbooks_operation_id': log_id.id if log_id else False,
                         }
@@ -523,9 +577,18 @@ class QuickbooksOperations(models.TransientModel):
                         'qbo_response': pprint.pformat(tax),
                     }
                     tax_mapping.sudo().write(mapping_vals)
+                    taxes_log_val = {
+                        'quickbooks_operation_name': 'taxes',
+                        'quickbooks_operation_type': 'import',
+                        'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'quickbooks_operation_message': f"Taxes updated with QuickBooks Taxes: {qkb_tax_name}",
+                        'process_response_message': pprint.pformat(tax),
+                        'quickbooks_operation_id': log_id.id if log_id else False}
+                    qkb_map_taxes_log_ln.append(taxes_log_val)
 
             if quickbook_map_taxes:
                 taxes_mapped = self.env['qbo.taxes.vts'].sudo().create(quickbook_map_taxes)
+            if qkb_map_taxes_log_ln:
                 taxes_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(qkb_map_taxes_log_ln)
 
         else:

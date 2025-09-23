@@ -8,7 +8,7 @@
     'license': 'OPL-1',
 
     # Dependencies
-    'depends': ["quickbooks_connector_vts"],
+    'depends': ["quickbooks_connector_vts","stock"],
 
     # Views
     'data': [
