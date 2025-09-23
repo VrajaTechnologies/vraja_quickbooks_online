@@ -1,0 +1,12 @@
+<odoo>
+    <record id="view_quickbooks_wizard_form_inherit" model="ir.ui.view">
+        <field name="name">quickbooks.connect.inherit.form</field>
+        <field name="model">quickbooks.connect</field>
+        <field name="inherit_id" ref="quickbooks_connector_vts.quickbooks_connect_form_view"/>
+        <field name="arch" type="xml">
+              <xpath expr="//field[@name='account_creation']" position="after">
+                   <field name="product_creation"/>
+              </xpath>
+        </field>
+    </record>
+</odoo>

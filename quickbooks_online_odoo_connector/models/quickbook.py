@@ -8,11 +8,13 @@ class QuickbooksConnect(models.Model):
 
 	_inherit = 'quickbooks.connect'
 
+	product_creation = fields.Boolean(string="Product Creation", help="Enable this option to create a product if does not exist when importing.",copy=False)
+
+	"""Return dictionary object"""
 	@api.model
 	def convert_xmltodict(self, response):
-		"""Return dictionary object"""
 		try:
-			# convert xml response to OrderedDict collections, return collections.OrderedDict type
+
 			if type(response) != dict:
 				order_dict = xmltodict.parse(response)
 			else:
@@ -20,6 +22,6 @@ class QuickbooksConnect(models.Model):
 		except ParsingInterrupted as e:
 			_logger.error(e)
 			raise e
-		# convert OrderedDict to regular dictionary object
+
 		response_dict = json.loads(json.dumps(order_dict))
 		return response_dict

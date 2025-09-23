@@ -65,13 +65,18 @@ class QuickbooksAPIVts(models.AbstractModel):
         customer_types = customer_types_response.get('QueryResponse', {}).get('CustomerType', [])
         return {ct['Id']: ct['Name'] for ct in customer_types}
 
-    def get_data_from_quickbooks(self, qck_url, company_id, token, operation, from_date=None, to_date=None):
+    def _get_operation_map(self):
         operation_map = {
             'import_customers': 'Customer',
             'import_payment_terms': 'TERM',
             'import_taxes': 'TaxCode',
-            'import_account': 'Account'
-        }
+            'import_account': 'Account'}
+            
+        return operation_map
+
+    def get_data_from_quickbooks(self, qck_url, company_id, token, operation, from_date=None, to_date=None):
+        
+        operation_map = self._get_operation_map()
 
         entity = operation_map.get(operation)
 

@@ -229,7 +229,7 @@ class QuickbooksOperations(models.TransientModel):
                         'quickbook_account_name': qkb_account_name,
                         'account_id': accounts_detail.id if accounts_detail else False,
                         'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
-                        'qbo_response': pprint.pformat(str(account)),
+                        'qbo_response': pprint.pformat(account),
                     }
                     quickbook_map_account.append(mapping_vals)
                     if not accounts_detail:
@@ -258,7 +258,7 @@ class QuickbooksOperations(models.TransientModel):
                 else:
                     mapping_vals = {
                         'account_id': accounts_detail.id if accounts_detail else False,
-                        'qbo_response': pprint.pformat(str(account)),
+                        'qbo_response': pprint.pformat(account),
                     }
                     account_mapping.sudo().write(mapping_vals)
 
@@ -315,7 +315,7 @@ class QuickbooksOperations(models.TransientModel):
                         'quickbook_payment_name': qkb_payment_name,
                         'payment_id': payment_terms.id if payment_terms else False,
                         'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
-                        'qbo_response': pprint.pformat(str(term)),
+                        'qbo_response': pprint.pformat(term),
                     }
                     quickbook_map_payment_term.append(mapping_vals)
                     if not payment_terms:
@@ -344,7 +344,7 @@ class QuickbooksOperations(models.TransientModel):
                 else:
                     mapping_vals = {
                         'payment_id': payment_terms.id if payment_terms else False,
-                        'qbo_response': pprint.pformat(str(term)),
+                        'qbo_response': pprint.pformat(term),
                     }
                     payment_term_mapping.sudo().write(mapping_vals)
 
@@ -491,7 +491,7 @@ class QuickbooksOperations(models.TransientModel):
                         'quickbook_tax_name': qkb_tax_name,
                         'tax_id': tax_detail.id if tax_detail else False,
                         'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
-                        'qbo_response': pprint.pformat(str(tax)),
+                        'qbo_response': pprint.pformat(tax),
                     }
                     quickbook_map_taxes.append(mapping_vals)
                     if not tax_detail:
@@ -520,7 +520,7 @@ class QuickbooksOperations(models.TransientModel):
                 else:
                     mapping_vals = {
                         'tax_id': tax_detail.id if tax_detail else False,
-                        'qbo_response': pprint.pformat(str(tax)),
+                        'qbo_response': pprint.pformat(tax),
                     }
                     tax_mapping.sudo().write(mapping_vals)
 

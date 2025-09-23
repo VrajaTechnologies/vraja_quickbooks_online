@@ -12,9 +12,12 @@
 
     # Views
     'data': [
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
         'data/quickbook_server_action.xml',
         'views/partner_view.xml',
+        'views/qbo_product_map.xml',
+        'wizard/quickbook_operation_view.xml',
+        'views/quickbooks_view.xml'
     ],
 
     # Author
