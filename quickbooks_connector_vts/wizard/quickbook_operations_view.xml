@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-
         <!-- Quickbooks Operations Form-->
         <record id="quickbooks_operations_form_view" model="ir.ui.view">
             <field name="name">Quickbooks operations form view</field>

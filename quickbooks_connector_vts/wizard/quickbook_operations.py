@@ -413,11 +413,15 @@ class QuickbooksOperations(models.TransientModel):
         tax_obj = self.env['account.tax']
 
         taxrate_map = self.env['quickbooks.api.vts'].sudo().get_tax_rates(qck_url, company_id, token)
-        tax_group = self.env['account.tax.group'].sudo().search([('name', '=', 'QuickbookTax')], limit=1)
-        if not tax_group:
-            tax_group = self.env['account.tax.group'].sudo().create({
-                'name': 'QuickbookTax',
-                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False})
+
+        tax_group = False
+        company = self.quickbook_instance_id.company_id
+        country = company.country_id if company and company.country_id else False
+        if country:
+            tax_group = self.env['account.tax.group'].sudo().search([('country_id', '=', country.id)], limit=1)
+        if not tax_group and country:
+            tax_group = self.env['account.tax.group'].sudo().create({'name': '%s Quickbook Tax' % country.code,
+                                                                 'country_id': country.id, 'company_id': company.id})
 
         tax_detail = False
 
@@ -431,7 +435,7 @@ class QuickbooksOperations(models.TransientModel):
                 'tax_group_id': tax_group.id,
                 'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
                 'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
-                'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
+                'country_id': self.quickbook_instance_id.company_id.country_id.id if self.quickbook_instance_id.company_id.country_id else False
             }
 
             # ---------- Purchase Taxes ----------
@@ -457,7 +461,7 @@ class QuickbooksOperations(models.TransientModel):
                             'type_tax_use': 'purchase',
                             'tax_group_id': tax_group.id,
                             'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
+                            'country_id': self.quickbook_instance_id.company_id.country_id.id if self.quickbook_instance_id.company_id.country_id else False
                         })
                     purchase_tax_rate_ids.append(child_tax.id)
 
@@ -493,7 +497,7 @@ class QuickbooksOperations(models.TransientModel):
                             'type_tax_use': 'sale',
                             'tax_group_id': tax_group.id,
                             'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'country_id': self.quickbook_instance_id.country_id.id if self.quickbook_instance_id.country_id else False
+                            'country_id': self.quickbook_instance_id.company_id.country_id.id if self.quickbook_instance_id.company_id.country_id else False
                         })
                     sale_tax_rate_ids.append(child_tax.id)
 
