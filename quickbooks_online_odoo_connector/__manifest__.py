@@ -17,7 +17,8 @@
         'views/partner_view.xml',
         'views/qbo_product_map.xml',
         'wizard/quickbook_operation_view.xml',
-        'views/quickbooks_view.xml'
+        'views/quickbooks_view.xml',
+        'views/product_template_view.xml',
     ],
 
     # Author

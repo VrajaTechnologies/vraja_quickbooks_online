@@ -7,3 +7,4 @@ class ProductTemplate(models.Model):
 
 	qck_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance",copy=False)
 	qkb_product_ID = fields.Char(string="Quickbook Product ID")
+	qck_product_type = fields.Char(string="Quickbook Product Type ID")

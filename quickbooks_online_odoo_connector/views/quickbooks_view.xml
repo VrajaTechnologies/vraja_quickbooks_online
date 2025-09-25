@@ -5,9 +5,22 @@
         <field name="model">quickbooks.connect</field>
         <field name="inherit_id" ref="quickbooks_connector_vts.quickbooks_connect_form_view"/>
         <field name="arch" type="xml">
-              <xpath expr="//field[@name='account_creation']" position="after">
-                   <field name="product_creation"/>
-              </xpath>
+            <xpath expr="//field[@name='account_creation']" position="after">
+                <field name="product_creation"/>
+            </xpath>
+         <xpath expr="//div[@class='oe_button_box']" position="inside">
+                <button name="action_qck_product"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shopping-cart">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Product</span>
+                        <span class="o_stat_value">
+                            <field name="qck_product_count"/>
+                        </span>
+                    </div>
+                </button>
+            </xpath>
         </field>
     </record>
 </odoo>
