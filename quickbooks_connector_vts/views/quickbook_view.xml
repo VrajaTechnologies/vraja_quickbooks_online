@@ -143,7 +143,7 @@
         <field name="name">quickbooks.connect.kanban</field>
         <field name="model">quickbooks.connect</field>
         <field name="arch" type="html">
-            <kanban class="oe_background_grey o_kanban_dashboard o_account_kanban" create="false">
+            <kanban class="oe_background_grey o_kanban_dashboard o_account_kanban">
                 <field name="name"/>
                 <templates>
                     <t t-name="kanban-box">

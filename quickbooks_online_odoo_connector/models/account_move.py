@@ -2,6 +2,9 @@ import requests
 import json
 from odoo import models, fields
 
+TAX_INCLUDED = 'TaxInclusive'
+TAX_EXCLUDED = 'TaxExcluded'
+
 class AccountMove(models.Model):
 
 	_inherit = "account.move"
@@ -26,6 +29,11 @@ class AccountMove(models.Model):
 				"Balance": float(invoice.amount_residual),
 			}
 
+		if quickbook_instance.country_id and quickbook_instance.country_id.code == "US":
+			qbo_invoice_val["GlobalTaxCalculation"] = TAX_EXCLUDED
+		else:
+			qbo_invoice_val["GlobalTaxCalculation"] = TAX_INCLUDED if quickbook_instance.company_include_tax else TAX_EXCLUDED
+
 		line_number = 1
 		qbk_tax_code = None
 
@@ -42,9 +50,14 @@ class AccountMove(models.Model):
 					qbk_tax_code = line.tax_ids[0].qck_taxes_ID
 					tax_value = "TAX"
 
+			if qbo_invoice_val["GlobalTaxCalculation"] == TAX_INCLUDED:
+				line_amount = float(line.price_total)
+			else:
+				line_amount = float(line.price_subtotal)
+
 			qbo_invoice_val["Line"].append({
 				"Description": line.name,
-				"Amount": float(line.price_subtotal),
+				"Amount": line_amount,
 				"DetailType": "SalesItemLineDetail",
 				"LineNum": line_number,
 				"SalesItemLineDetail": {
@@ -60,7 +73,7 @@ class AccountMove(models.Model):
 
 		return qbo_invoice_val
 
-	"""Export Invoice to QuickBooks"""
+	# Export Invoice to QuickBooks
 	def export_invoice_quickbooks(self, invoice):
 		if invoice.state != 'posted':
 			return
@@ -132,7 +145,7 @@ class AccountMove(models.Model):
 				log_id=log_id,fault_operation=True)
 			return None
 
-	"""Prepare QuickBooks Vendor Bill values"""
+	# Prepare QuickBooks Vendor Bill values
 	def _prepare_qbo_vendor_bill_vals(self, bill, quickbook_instance, log_id):
 		qbo_bill_val = {
 			"TxnDate": str(bill.invoice_date),
@@ -173,7 +186,6 @@ class AccountMove(models.Model):
 		                },
 		                "Qty": line.quantity,
 		                "UnitPrice": float(line.price_unit),
-		                "TaxCodeRef": {"value": "TAX" if line.tax_ids else "NON"}
 		            }
 		        })
 

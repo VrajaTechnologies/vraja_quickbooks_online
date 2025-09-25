@@ -10,6 +10,7 @@ class QuickbooksConnect(models.Model):
 
 	product_creation = fields.Boolean(string="Product Creation", help="Enable this option to create a product if does not exist when importing.", copy=False)
 	qck_product_count = fields.Integer(string="Product Count", compute='_compute_product_count')
+	company_include_tax = fields.Boolean(string="Send Invoice Tax Included",copy=False)
 
 	"""Return dictionary object"""
 	@api.model
@@ -33,6 +34,6 @@ class QuickbooksConnect(models.Model):
 
 	def action_qck_product(self):
 		self.ensure_one()
-		action = self.env["ir.actions.actions"]._for_xml_id('sale.product_template_action')
+		action = self.env["ir.actions.actions"]._for_xml_id('product.product_template_action')
 		action['domain'] = [('qck_instance_id', '=', self.id)]
 		return action
