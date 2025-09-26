@@ -1,5 +1,10 @@
+# -*- coding: utf-8 -*-
+import requests
+import json
+import logging
 from odoo import models, fields
 
+_logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
 
@@ -8,6 +13,68 @@ class AccountPayment(models.Model):
 	qk_bill_payment_ID = fields.Char(string="Quickbook Bill Payment ID")
 	qk_payment_ID = fields.Char(string="Quickbook Payment ID")
 	error_in_export = fields.Boolean(string="Error In Export")
+
+	def write(self, vals):
+		res = super(AccountPayment, self).write(vals)
+		for payment in self:
+			if not payment.qk_payment_ID:
+				continue
+
+			company = payment.company_id.id if payment.company_id else False
+			quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+
+			if not (quickbook_instance and quickbook_instance.access_token and quickbook_instance.realm_id):
+				payment.message_post(body="QuickBooks Payment Update Failed: Authentication required")
+				continue
+
+			try:
+				headers = {
+					"Authorization": f"Bearer {quickbook_instance.access_token}",
+					"Content-Type": "application/json",
+					"Accept-Encoding": "identity",
+				}
+
+				payment_payload, _ = payment._prepare_payment_payload(payment)
+
+				url_get = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/payment/{payment.qk_payment_ID}"
+				response_get = requests.get(url_get, headers=headers)
+				response_get.raise_for_status()
+
+				response_data = quickbook_instance.convert_xmltodict(response_get.text)
+				existing_payment = response_data.get("IntuitResponse", {}).get("Payment", {}) or {}
+				sync_token = existing_payment.get("SyncToken", "0")
+
+				payment_payload.update({
+					"Id": payment.qk_payment_ID,
+					"SyncToken": sync_token})
+
+				parsed_dict = json.dumps(payment_payload)
+				_logger.info("Export Update Dict for Payment %s: %s", payment.name, parsed_dict)
+
+				url_update = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/payment"
+				result = requests.post(url_update, headers=headers, data=parsed_dict)
+
+				update_result_res = quickbook_instance.convert_xmltodict(result.text)
+
+				if result.ok:
+					payment.message_post(body=f"{payment.name} updated successfully to QuickBooks")
+
+				else:
+					fault = update_result_res.get("IntuitResponse", {}).get("Fault", {})
+					error = fault.get("Error", {})
+					error_message = error.get("Message", "")
+					error_detail = error.get("Detail", "")
+					combined_msg = error_message
+					if error_detail:
+						combined_msg += f": {error_detail}"
+					payment.message_post(body=f"Payment Update Error: {combined_msg}")
+
+			except requests.exceptions.RequestException as req_err:
+				payment.message_post(body=f"Request error while updating {payment.name}: {str(req_err)}")
+			except Exception as e:
+				payment.message_post(body=f"Unexpected error while updating {payment.name}: {str(e)}")
+
+		return res
 
 	def _prepare_billpayment_payload(self, payment, payment_account):
 
@@ -24,8 +91,7 @@ class AccountPayment(models.Model):
 			bill_val = {
 					"Amount": bill.amount_total,
 					"LinkedTxn": [{"TxnId": str(bill.qbk_bill_id or ""),
-								"TxnType": "Bill"}]
-					}
+								"TxnType": "Bill"}]}
 
 			bill_payment_payload['Line'].append(bill_val)
 
@@ -124,9 +190,108 @@ class AccountPayment(models.Model):
 			
 			return None
 
+	def _prepare_payment_payload(self, payment):
+
+		payment_payload = {
+			"CustomerRef": {
+				"value": payment.partner_id.qbk_id or "",
+				"name": payment.partner_id.name
+			},
+			"PaymentRefNum": payment.name,
+			"TotalAmt": payment.amount,
+			"TxnDate": str(payment.date),
+			"PrivateNote": payment.memo or "",
+			"Line": []
+		}
+
+		for inv in payment.reconciled_invoice_ids.filtered(lambda m: m.move_type == 'out_invoice'):
+			if inv.qbk_invoice_id:
+				line_val = {
+					"Amount": inv.amount_residual if payment.amount != inv.amount_total else inv.amount_total,
+					"LinkedTxn": [{
+						"TxnId": str(inv.qbk_invoice_id),
+						"TxnType": "Invoice"
+					}]
+				}
+				payment_payload["Line"].append(line_val)
+
+		payment_account = payment.journal_id.default_account_id
+		if payment_account and payment_account.quickbooks_id:
+			payment_payload["DepositToAccountRef"] = {
+				"value": payment_account.quickbooks_id,
+				"name": payment_account.name}
+
+		return payment_payload, "payment"
+
 	def export_payment_qbo(self, payment):
-		print("Hello AAshishs")
-		# payment_payload, endpoint = self._prepare_payment_payload(payment)
+
+		if payment.qk_payment_ID:
+			payment.message_post(body=f"Payment already exported to QuickBooks with ID {payment.qk_payment_ID}.")
+			return
+
+		company = payment.company_id.id if payment.company_id else False
+		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+
+		if not quickbook_instance:
+			payment.message_post(body=f"No QuickBooks instance configured for {company} company.")
+			return
+
+		log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+			quickbooks_operation_name="payment",quickbooks_operation_type="export",
+			instance=quickbook_instance.id,quickbooks_operation_message=f"Starting export for Payment {payment.name}"
+		)
+
+		if not payment.partner_id.qbk_id:
+			msg = f"Customer {payment.partner_id.name} not mapped with QuickBooks."
+			payment.message_post(body=msg)
+			payment.error_in_export = True
+			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+				quickbooks_operation_name="payment",quickbooks_operation_type="export",
+				instance=quickbook_instance.id,quickbooks_operation_message=msg,
+				process_request_message={},process_response_message={},
+				log_id=log_id,fault_operation=True)
+			return
+
+		payment_payload, endpoint = self._prepare_payment_payload(payment)
+
+		try:
+			payment_url = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/{endpoint}"
+
+			response_json, status_code = self.env['quickbooks.api.vts'].sudo().qb_post_request(
+				quickbook_instance.access_token, payment_url, payment_payload)
+
+			if status_code == 200:
+				payment_data = response_json.get("Payment", {})
+				qk_payment_id = payment_data.get("Id")
+				payment.qk_payment_ID = qk_payment_id
+				payment.error_in_export = False
+				payment.message_post(body=f"Exported Payment {payment.name} to QuickBooks, ID: {qk_payment_id}")
+				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+					quickbooks_operation_name="payment",quickbooks_operation_type="export",
+					instance=quickbook_instance.id,quickbooks_operation_message=f"Successfully exported Payment {payment.name}",
+					process_request_message=payment_payload,process_response_message=response_json,
+					log_id=log_id)
+				return response_json
+			else:
+				msg = f"Failed to export Payment {payment.name} to QuickBooks. Response: {response_json}"
+				payment.message_post(body=msg)
+				payment.error_in_export = True
+				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+					quickbooks_operation_name="payment",quickbooks_operation_type="export",
+					instance=quickbook_instance.id,quickbooks_operation_message=msg,
+					process_request_message=payment_payload,process_response_message=response_json,
+					log_id=log_id,fault_operation=True)
+				return None
+
+		except Exception as e:
+			payment.message_post(body=f"Exception while exporting Payment {payment.name} to QuickBooks: {str(e)}")
+			payment.error_in_export = True
+			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+				quickbooks_operation_name="payment",quickbooks_operation_type="export",
+				instance=quickbook_instance.id,quickbooks_operation_message=f"Exception: {str(e)}",
+				process_request_message=payment_payload,process_response_message=str(e),
+				log_id=log_id,fault_operation=True)
+			return None
 
 	def export_payment_to_quickbooks(self):
 		for payment in self:

@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 import requests
 import json
+import logging
 from odoo import models, fields
+_logger = logging.getLogger(__name__)
 
 TAX_INCLUDED = 'TaxInclusive'
 TAX_EXCLUDED = 'TaxExcluded'
@@ -13,7 +16,70 @@ class AccountMove(models.Model):
 	qbk_bill_id = fields.Char("QuickBooks Bill ID",copy=False)
 	error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
 
-	def _prepare_qbo_invoice_vals(self, invoice, quickbook_instance, log_id):
+	def write(self, vals):
+		res = super(AccountMove, self).write(vals)
+		for invoice in self:
+			print("Aahishsh Hello",vals)
+			if not invoice.qbk_invoice_id:
+				continue
+
+			company = invoice.company_id.id if invoice.company_id else False
+			quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+
+			if not (quickbook_instance and quickbook_instance.access_token and quickbook_instance.realm_id):
+				invoice.message_post(body="QuickBooks Update Failed: Authentication required")
+				continue
+
+			try:
+			    headers = {
+			        "Authorization": f"Bearer {quickbook_instance.access_token}",
+			        "Content-Type": "application/json",
+			        "Accept-Encoding": "identity",
+			    }
+
+			    export_vals = invoice._prepare_qbo_invoice_vals(invoice, quickbook_instance)
+
+			    url_get = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/invoice/{invoice.qbk_invoice_id}"
+			    response_get = requests.get(url_get, headers=headers)
+			    response_get.raise_for_status()
+
+			    response_data = quickbook_instance.convert_xmltodict(response_get.text)
+			    existing_invoice = response_data.get("IntuitResponse", {}).get("Invoice", {}) or {}
+			    sync_token = existing_invoice.get("SyncToken")
+
+			    for addr_type in ("BillAddr", "ShipAddr"):
+			        addr_id = existing_invoice.get(addr_type, {}).get("Id")
+			        if addr_id:
+			            export_vals[addr_type] = {"Id": addr_id}
+
+			    export_vals.update({
+			        "Id": invoice.qbk_invoice_id,
+			        "SyncToken": sync_token,
+			    })
+
+			    parsed_dict = json.dumps(export_vals)
+			    _logger.info("Export Update Dict for Invoice %s: %s", invoice.name, parsed_dict)
+
+			    url_update = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/invoice"
+			    result = requests.post(url_update, headers=headers, data=parsed_dict, timeout=30)
+
+			    if result.ok:
+			        decoded_update = result.text  # requests auto-decodes gzip/encoding
+			        quickbook_instance.convert_xmltodict(decoded_update)
+			        invoice.message_post(body=f"{invoice.name} updated successfully to QuickBooks")
+			    else:
+			        msg = f"{result.status_code} - {result.content.decode(errors='ignore')}"
+			        invoice.message_post(body=f"Invoice Update Error: {msg}")
+
+			except requests.exceptions.RequestException as req_err:
+			    invoice.message_post(body=f"Request error while updating {invoice.name}: {str(req_err)}")
+
+			except Exception as e:
+			    invoice.message_post(body=f"Unexpected error while updating {invoice.name}: {str(e)}")
+
+		return res
+
+	def _prepare_qbo_invoice_vals(self, invoice, quickbook_instance):
 		qbo_invoice_val = {
 				"TxnDate": str(invoice.invoice_date),
 				"DocNumber": invoice.name,
@@ -90,10 +156,8 @@ class AccountMove(models.Model):
 			return
 
 		log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-			quickbooks_operation_name="invoice",
-			quickbooks_operation_type="export",
-			instance=quickbook_instance.id,
-			quickbooks_operation_message=f"Starting export for Invoice {invoice.name}")
+			quickbooks_operation_name="invoice",quickbooks_operation_type="export",
+			instance=quickbook_instance.id,quickbooks_operation_message=f"Starting export for Invoice {invoice.name}")
 
 		if not invoice.partner_id.qbk_id:
 			msg = f"Customer {invoice.partner_id.name} not mapped with QuickBooks."
@@ -107,7 +171,7 @@ class AccountMove(models.Model):
 
 		try:
 
-			qbo_invoice_val = self._prepare_qbo_invoice_vals(invoice, quickbook_instance, log_id)
+			qbo_invoice_val = self._prepare_qbo_invoice_vals(invoice, quickbook_instance)
 
 			inv_url = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/invoice"
 
@@ -178,18 +242,18 @@ class AccountMove(models.Model):
 				continue
 				
 			qbo_bill_val["Line"].append({
-		            "DetailType": "ItemBasedExpenseLineDetail",
-		            "Amount": float(line.price_subtotal),
-		            "Description": line.name or "",
-		            "ItemBasedExpenseLineDetail": {
-		                "ItemRef": {
-		                    "value": line.product_id.qkb_product_ID,
-		                    "name": line.product_id.name
-		                },
-		                "Qty": line.quantity,
-		                "UnitPrice": float(line.price_unit),
-		            }
-		        })
+					"DetailType": "ItemBasedExpenseLineDetail",
+					"Amount": float(line.price_subtotal),
+					"Description": line.name or "",
+					"ItemBasedExpenseLineDetail": {
+						"ItemRef": {
+							"value": line.product_id.qkb_product_ID,
+							"name": line.product_id.name
+						},
+						"Qty": line.quantity,
+						"UnitPrice": float(line.price_unit),
+					}
+				})
 
 		return qbo_bill_val
 
