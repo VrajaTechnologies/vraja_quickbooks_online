@@ -95,6 +95,7 @@ class AccountPayment(models.Model):
 				billp_data = response_json.get("BillPayment", {})
 				qbk_bp_id = billp_data.get("Id")
 				payment.qk_bill_payment_ID = qbk_bp_id
+				payment.error_in_export = False
 				payment.message_post(body=f"Exported Bill Payment {payment.name} to QuickBooks, ID: {qbk_bp_id}")
 				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
 					quickbooks_operation_name="billpayment",quickbooks_operation_type="export",

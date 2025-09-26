@@ -80,7 +80,7 @@ class ResPartner(models.Model):
                     qbk_id = customer_data.get("Id")
                     
                     setattr(partner, qbk_field, qbk_id)
-
+                    partner.error_in_export = False
                     partner.message_post(body=f"Exported {partner.name} to QuickBooks as {endpoint}, ID: {qbk_id}")
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name=endpoint,
                     quickbooks_operation_type="export",instance=quickbook_instance.id,
