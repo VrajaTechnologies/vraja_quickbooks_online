@@ -95,16 +95,17 @@ class AccountMove(models.Model):
 			instance=quickbook_instance.id,
 			quickbooks_operation_message=f"Starting export for Invoice {invoice.name}")
 
+		if not invoice.partner_id.qbk_id:
+			msg = f"Customer {invoice.partner_id.name} not mapped with QuickBooks."
+			invoice.message_post(body=msg)
+			invoice.error_in_export = True
+			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="invoice",
+				quickbooks_operation_type="export",instance=quickbook_instance.id,
+				quickbooks_operation_message=msg,process_request_message={},
+				process_response_message={},log_id=log_id,fault_operation=True)
+			return
+
 		try:
-			if not invoice.partner_id.qbk_id:
-				msg = f"Customer {invoice.partner_id.name} not mapped with QuickBooks."
-				invoice.message_post(body=msg)
-				invoice.error_in_export = True
-				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="invoice",
-					quickbooks_operation_type="export",instance=quickbook_instance.id,
-					quickbooks_operation_message=msg,process_request_message={},
-					process_response_message={},log_id=log_id,fault_operation=True)
-				return
 
 			qbo_invoice_val = self._prepare_qbo_invoice_vals(invoice, quickbook_instance, log_id)
 
@@ -141,7 +142,7 @@ class AccountMove(models.Model):
 			invoice.error_in_export = True
 			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="invoice",
 				quickbooks_operation_type="export",instance=quickbook_instance.id,
-				quickbooks_operation_message=f"Exception: {str(e)}",process_request_message={},process_response_message=str(e),
+				quickbooks_operation_message=f"Exception: {str(e)}",process_request_message=qbo_invoice_val,process_response_message=str(e),
 				log_id=log_id,fault_operation=True)
 			return None
 
@@ -214,24 +215,21 @@ class AccountMove(models.Model):
 			quickbooks_operation_message=f"Starting export for Vendor Bill {bill.name}"
 		)
 
-		try:
-			if not bill.partner_id.qbk_vendor_id:
-				msg = f"Vendor {bill.partner_id.name} not mapped with QuickBooks."
-				bill.message_post(body=msg)
-				bill.error_in_export = True
-				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-					quickbooks_operation_name="bill",
-					quickbooks_operation_type="export",
-					instance=quickbook_instance.id,
-					quickbooks_operation_message=msg,
-					process_request_message={},
-					process_response_message={},
-					log_id=log_id,
-					fault_operation=True
-				)
-				return
+		if not bill.partner_id.qbk_vendor_id:
+			msg = f"Vendor {bill.partner_id.name} not mapped with QuickBooks."
+			bill.message_post(body=msg)
+			bill.error_in_export = True
+			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+				quickbooks_operation_name="bill",quickbooks_operation_type="export",
+				instance=quickbook_instance.id,quickbooks_operation_message=msg,
+				process_request_message={},process_response_message={},
+				log_id=log_id,fault_operation=True)
+			return
+		
+		qbo_bill_val = self._prepare_qbo_vendor_bill_vals(bill, quickbook_instance, log_id)
 
-			qbo_bill_val = self._prepare_qbo_vendor_bill_vals(bill, quickbook_instance, log_id)
+		try:
+
 			bill_url = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/bill"
 
 			response_json, status_code = self.env['quickbooks.api.vts'].sudo().qb_post_request(quickbook_instance.access_token,
@@ -269,7 +267,7 @@ class AccountMove(models.Model):
 			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
 				quickbooks_operation_name="bill",quickbooks_operation_type="export",
 				instance=quickbook_instance.id,quickbooks_operation_message=f"Exception: {str(e)}",
-				process_request_message={},process_response_message=str(e),
+				process_request_message=qbo_bill_val,process_response_message=str(e),
 				log_id=log_id,fault_operation=True)
 			return None
 

@@ -32,6 +32,7 @@ class QuickbooksWizardInherit(models.TransientModel):
             'standard_price': product.get('PurchaseCost', 0.0),
             'is_storable': is_storable,
             'type': qk_product_type,
+            'qck_product_type': product_type,
             'qkb_product_ID': product.get('Id', ''),
             'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
             'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else False,
