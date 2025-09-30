@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     # App information
-    'name': 'Quickbooks Online Odoo Connector',
+    'name': 'Quickbooks Online Odoo Connector ',
     'category': 'Website',
     'version': '18.0.0.0.1',
     'summary': """Quickbooks Online Odoo Connector""",
