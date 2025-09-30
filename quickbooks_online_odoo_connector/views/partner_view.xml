@@ -11,4 +11,19 @@
             </xpath>
         </field>
     </record>
+    <record id="view_customer_export_error_filter" model="ir.ui.view">
+        <field name="name">res.partner.filter.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='quickbook_partners']" position="after">
+                <filter string="Quickbooks Export Issue" name="quickbook_customer_export_error"
+                        domain="[('error_in_export', '=', True)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_Quickbook']" position="after">
+                <filter string="Quickbooks Export Issue" name="group_by_quickbook_export_error"
+                        context="{'group_by':'error_in_export'}"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

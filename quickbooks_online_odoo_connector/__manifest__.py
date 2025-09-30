@@ -19,6 +19,8 @@
         'wizard/quickbook_operation_view.xml',
         'views/quickbooks_view.xml',
         'views/product_template_view.xml',
+        'views/account_move_view.xml',
+        'views/account_payment_view.xml',
     ],
 
     # Author

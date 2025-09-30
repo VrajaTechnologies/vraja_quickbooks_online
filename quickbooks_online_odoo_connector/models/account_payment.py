@@ -7,21 +7,6 @@ from odoo import models, fields, _
 _logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
-
-    _inherit = "account.payment"
-
-    qk_bill_payment_ID = fields.Char(string="Quickbook Bill Payment ID")
-    qk_payment_ID = fields.Char(string="Quickbook Payment ID")
-    error_in_export = fields.Boolean(string="Error In Export")
-
-    import requests
-import json
-import logging
-from odoo import models, fields
-
-_logger = logging.getLogger(__name__)
-
-class AccountPayment(models.Model):
     _inherit = "account.payment"
 
     qk_bill_payment_ID = fields.Char(string="QuickBooks Bill Payment ID")

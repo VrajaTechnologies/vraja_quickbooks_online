@@ -8,8 +8,11 @@
             <xpath expr="//field[@name='account_creation']" position="after">
                 <field name="product_creation"/>
                 <field name="company_include_tax"/>
+                <field name="auto_export_moves"/>
+                <field name="export_moves_point_date" invisible="not auto_export_moves"/>
+                <field name="exp_qbk_moves_next_call_point" invisible="not auto_export_moves"/>
             </xpath>
-         <xpath expr="//div[@class='oe_button_box']" position="inside">
+            <xpath expr="//div[@class='oe_button_box']" position="inside">
                 <button name="action_qck_product"
                         type="object"
                         class="oe_stat_button"
