@@ -10,6 +10,8 @@ class ResPartner(models.Model):
     
     qbk_vendor_id = fields.Char("QuickBooks Vendor ID")
     error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
+    is_customer_exported = fields.Boolean(string= "Exported Customer", default=False)
+    is_vendor_exported = fields.Boolean(string= "Exported Customer", default=False)
 
     def export_customer_to_quickbooks(self):
         for partner in self:
@@ -80,6 +82,10 @@ class ResPartner(models.Model):
                     qbk_id = customer_data.get("Id")
                     
                     setattr(partner, qbk_field, qbk_id)
+                    if qbk_field == 'qbk_id':
+                        partner.is_customer_exported = True
+                    elif qbk_field == 'qbk_vendor_id':
+                        partner.is_vendor_exported = True
                     partner.error_in_export = False
                     partner.message_post(body=f"Exported {partner.name} to QuickBooks as {endpoint}, ID: {qbk_id}")
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name=endpoint,

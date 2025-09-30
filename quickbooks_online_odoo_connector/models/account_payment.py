@@ -12,6 +12,8 @@ class AccountPayment(models.Model):
     qk_bill_payment_ID = fields.Char(string="QuickBooks Bill Payment ID")
     qk_payment_ID = fields.Char(string="QuickBooks Payment ID")
     error_in_export = fields.Boolean(string="Error In Export")
+    is_inv_pay_exported = fields.Boolean(string="Is Invoice Payment Exported", default=False)
+    is_bill_pay_exported = fields.Boolean(string="Is Bill Payment Exported", default=False)
 
     def write(self, vals):
         res = super(AccountPayment, self).write(vals)
@@ -171,6 +173,7 @@ class AccountPayment(models.Model):
                 qbk_bp_id = billp_data.get("Id")
                 payment.qk_bill_payment_ID = qbk_bp_id
                 payment.error_in_export = False
+                payment.is_bill_pay_exported = True
                 payment.message_post(body=f"Exported Bill Payment {payment.name} to QuickBooks, ID: {qbk_bp_id}")
                 self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                     quickbooks_operation_name="billpayment",quickbooks_operation_type="export",
@@ -274,6 +277,7 @@ class AccountPayment(models.Model):
                 qk_payment_id = payment_data.get("Id")
                 payment.qk_payment_ID = qk_payment_id
                 payment.error_in_export = False
+                payment.is_inv_pay_exported = True
                 payment.message_post(body=f"Exported Payment {payment.name} to QuickBooks, ID: {qk_payment_id}")
                 self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                     quickbooks_operation_name="payment",quickbooks_operation_type="export",
