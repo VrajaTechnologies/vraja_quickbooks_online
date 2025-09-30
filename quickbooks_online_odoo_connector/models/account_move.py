@@ -15,6 +15,8 @@ class AccountMove(models.Model):
 	qbk_invoice_id = fields.Char("QuickBooks Invoice ID",copy=False)
 	qbk_bill_id = fields.Char("QuickBooks Bill ID",copy=False)
 	error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
+	is_inv_exported = fields.Boolean(string="Is Invoice Exported", default=False,copy=False)
+	is_bill_exported = fields.Boolean(string="Is Vendor Bill Exported", default=False,copy=False)
 
 	def write(self, vals):
 
@@ -196,6 +198,7 @@ class AccountMove(models.Model):
 				qbk_inv_id = invoice_data.get("Id")
 				invoice.qbk_invoice_id = qbk_inv_id
 				invoice.error_in_export = False
+				invoice.is_inv_exported = True
 				invoice.message_post(body=f"Exported Invoice {invoice.name} to QuickBooks, ID: {qbk_inv_id}")
 				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
 					quickbooks_operation_name="invoice",quickbooks_operation_type="export",
@@ -318,6 +321,7 @@ class AccountMove(models.Model):
 				qbk_bill_id = bill_data.get("Id")
 				bill.qbk_bill_id = qbk_bill_id
 				bill.error_in_export = False
+				bill.is_bill_exported = True
 				bill.message_post(body=f"Exported Vendor Bill {bill.name} to QuickBooks, ID: {qbk_bill_id}")
 				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
 					quickbooks_operation_name="bill",
