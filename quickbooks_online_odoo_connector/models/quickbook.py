@@ -3,6 +3,7 @@ from odoo import models, fields, api
 import json
 import xmltodict
 from xmltodict import ParsingInterrupted
+from dateutil.relativedelta import relativedelta
 
 class QuickbooksConnect(models.Model):
 
@@ -11,8 +12,8 @@ class QuickbooksConnect(models.Model):
 	product_creation = fields.Boolean(string="Product Creation", help="Enable this option to create a product if does not exist when importing.", copy=False)
 	qck_product_count = fields.Integer(string="Product Count", compute='_compute_product_count')
 	company_include_tax = fields.Boolean(string="Send Invoice Tax Included",copy=False)
-	auto_export_moves = fields.Boolean(string='Automatic Invoice/Bills Export to QBO',default=False)
-	export_moves_point_date = fields.Datetime(string="Export Date Point")
+	auto_export_moves = fields.Boolean(string='Automatic Invoice/Bills Export to QBO',default=False,help="Allow automatic export invoices from the beginning of the 'Export Date Point'.")
+	export_moves_point_date = fields.Date(string="Export Date Point",default=fields.Date.today(),help="Invoices/Bills export date point.")
 	exp_qbk_moves_next_call_point = fields.Datetime(string="Next Export Point",compute="_compute_moves_next_exp_call")
 
 	def _compute_moves_next_exp_call(self):
@@ -25,7 +26,6 @@ class QuickbooksConnect(models.Model):
 	@api.model
 	def convert_xmltodict(self, response):
 		try:
-
 			if type(response) != dict:
 				order_dict = xmltodict.parse(response)
 			else:
@@ -49,18 +49,28 @@ class QuickbooksConnect(models.Model):
 		return action
 
 	def export_account_moves_to_qbk(self):
-		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state', '=', 'connected'),('auto_export_moves', '=', True)])
-		for qbk_instance in quickbook_instance:
-			if  qbk_instance.export_moves_point_date:
-				invoices = self.env['account.move'].search([
-					('state', '=', 'posted'),
-					('invoice_date', '>=', qbk_instance.export_moves_point_date.date()),
-					('invoice_date', '<=', fields.Date.today()),
-					('error_in_export','=', False)])
+		
+		QBConnect = self.env['quickbooks.connect'].sudo()
+		AccountMove = self.env['account.move'].sudo()
+		quickbook_instances = QBConnect.search([('state', '=', 'connected'),('auto_export_moves', '=', True)])
+		for qbk in quickbook_instances:
+			if qbk.export_moves_point_date:
+				base_domain = [('state', '=', 'posted'),('invoice_date', '>=', qbk.export_moves_point_date),
+								('error_in_export', '=', False),('company_id', '=', qbk.company_id.id)]
 
+				invoices = AccountMove.search(base_domain + [('move_type', '=', 'out_invoice'),
+					('is_inv_exported', '=', False)])
 				for inv in invoices:
-					if inv.move_type == 'out_invoice':
-						inv.export_invoice_quickbooks(inv)
-					elif inv.move_type == 'in_invoice':
-						inv.export_vendor_bill_quickbooks(inv)
+					inv.export_invoice_quickbooks(inv)
 
+				bills = AccountMove.search(base_domain + [('move_type', '=', 'in_invoice'),
+					('is_bill_exported', '=', False)])
+				
+				for bill in bills:
+					bill.export_vendor_bill_quickbooks(bill)
+
+				all_moves = invoices | bills
+
+				if all_moves:
+					last_date = max(all_moves.mapped('invoice_date'))
+					qbk.export_moves_point_date = last_date + relativedelta(days=1)
