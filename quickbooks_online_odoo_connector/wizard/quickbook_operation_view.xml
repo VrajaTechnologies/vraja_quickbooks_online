@@ -5,10 +5,11 @@
         <field name="model">quickbooks.operations</field>
         <field name="inherit_id" ref="quickbooks_connector_vts.quickbooks_operations_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/group" position="before">
+            <xpath expr="//sheet" position="before">
                 <p style="background-color: powderblue; padding: 10px;" invisible="import_operations != 'import_product'">
                     <b>Notes: Import Product Process</b>
                     <ul>
+                        <br/>
                         <li>Fetched product from QuickBooks using API with applied filter.</li>
                         <li><b>Date Filter :</b> Only product created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.</li>
                     </ul>
