@@ -126,7 +126,7 @@
 
         <!-- action log-->
         <record id="action_quickbooks_log" model="ir.actions.act_window">
-            <field name="name">quickbooks Log</field>
+            <field name="name">Quickbooks Log</field>
             <field name="res_model">quickbooks.log.vts</field>
             <field name="view_id" ref="view_quickbook_log_tree_view"/>
             <field name="help" type="html">

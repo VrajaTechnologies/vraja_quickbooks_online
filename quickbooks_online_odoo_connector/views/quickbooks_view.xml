@@ -7,12 +7,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='account_creation']" position="after">
                 <field name="product_creation"/>
-                <field name="company_include_tax"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Export Configuration" name="export_configuration">
                     <group>
                         <group>
+                        <field name="company_include_tax"/>
                         <field name="auto_export_moves"/>
                         <field name="export_moves_point_date" invisible="not auto_export_moves"/>
                         </group>
