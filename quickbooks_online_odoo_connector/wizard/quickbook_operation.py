@@ -97,7 +97,7 @@ class QuickbooksWizardInherit(models.TransientModel):
                         quickbook_map_product_log_ln.append(product_log_vals)
 
                     elif product_detail:
-                        product_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False})
+                        product_detail.write({'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False,'qkb_product_ID':qkb_product_id})
                         opr_message = f"Product successfully mapped with QuickBooks product: {qkb_product_name}"
                         if pr_created:
                             opr_message = f"Product successfully created and mapped with QuickBooks product: {qkb_product_name}"
@@ -115,6 +115,8 @@ class QuickbooksWizardInherit(models.TransientModel):
                         'product_id': product_detail.id if product_detail else False,
                         'qbo_response': pprint.pformat(product),
                     }
+                    if product_detail and qkb_product_id:
+                        product_detail.qkb_product_ID = qkb_product_id
                     product_mapping.sudo().write(mapping_vals)
                     product_log_vals = {
                             'quickbooks_operation_name': 'product',

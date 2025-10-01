@@ -127,7 +127,7 @@ class AccountPayment(models.Model):
             return
 
         company = payment.company_id.id if payment.company_id else False
-        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
         if not quickbook_instance:
             payment.message_post(body=f"No QuickBooks instance configured for {company} company.")
@@ -138,16 +138,22 @@ class AccountPayment(models.Model):
             quickbooks_operation_message=f"Starting export for Bill Payment {payment.name}")
 
         if not payment.partner_id.qbk_vendor_id:
-            msg = f"Vendor {payment.partner_id.name} not mapped with QuickBooks."
-            payment.message_post(body=msg)
-            payment.error_in_export = True
-            self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="billpayment",
-                quickbooks_operation_type="export",instance=quickbook_instance.id,
-                quickbooks_operation_message=msg,process_request_message={},process_response_message={},
-                log_id=log_id,fault_operation=True)
-            return
+            qbk_vendor_id = payment.partner_id._export_to_quickbooks(payment.partner_id, 'vendor', 'qbk_vendor_id')
+            if payment.partner_id.qbk_vendor_id:
+                msg = f"Vendor {payment.partner_id.name} Created into QuickBooks."
+                payment.message_post(body=msg)
+            else:
+                msg = qbk_vendor_id
+                payment.message_post(body=msg)
+                payment.error_in_export = True
+                self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="billpayment",
+                    quickbooks_operation_type="export",instance=quickbook_instance.id,
+                    quickbooks_operation_message=msg,process_request_message={},
+                    process_response_message={},log_id=log_id,fault_operation=True)
+                return
 
         payment_account = payment.journal_id.default_account_id
+
 
         if payment_account and not payment_account.quickbooks_id:
             msg = f"Account {payment_account.display_name} not mapped with QuickBooks."
@@ -254,15 +260,19 @@ class AccountPayment(models.Model):
         )
 
         if not payment.partner_id.qbk_id:
-            msg = f"Customer {payment.partner_id.name} not mapped with QuickBooks."
-            payment.message_post(body=msg)
-            payment.error_in_export = True
-            self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-                quickbooks_operation_name="payment",quickbooks_operation_type="export",
-                instance=quickbook_instance.id,quickbooks_operation_message=msg,
-                process_request_message={},process_response_message={},
-                log_id=log_id,fault_operation=True)
-            return
+            qbk_id = payment.partner_id._export_to_quickbooks(payment.partner_id, 'customer', 'qbk_id')
+            if payment.partner_id.qbk_id:
+                msg = f"Customer {payment.partner_id.name} Created into QuickBooks."
+                payment.message_post(body=msg)
+            else:
+                msg = qbk_id
+                payment.message_post(body=msg)
+                payment.error_in_export = True
+                self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="payment",
+                    quickbooks_operation_type="export",instance=quickbook_instance.id,
+                    quickbooks_operation_message=msg,process_request_message={},
+                    process_response_message={},log_id=log_id,fault_operation=True)
+                return
 
         payment_payload, endpoint = self._prepare_payment_payload(payment)
 
