@@ -5,7 +5,7 @@
         <field name="model">quickbooks.operations</field>
         <field name="inherit_id" ref="quickbooks_connector_vts.quickbooks_operations_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet" position="before">
+            <xpath expr="//sheet/p" position="before">
                 <p style="background-color: powderblue; padding: 10px;" invisible="import_operations != 'import_product'">
                     <b>Notes: Import Product Process</b>
                     <ul>
