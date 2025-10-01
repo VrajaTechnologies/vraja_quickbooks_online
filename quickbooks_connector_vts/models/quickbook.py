@@ -146,3 +146,11 @@ class QuickbooksConnect(models.Model):
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
 
+    def unlink(self):
+        for rec in self:
+            self.env['qbo.partner.map.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
+            self.env['qbo.payment.terms.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
+            self.env['qbo.account.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
+            self.env['qbo.taxes.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
+        return super(QuickbooksConnect, self).unlink()
+

@@ -19,7 +19,7 @@ class QuickbooksLog(models.Model):
     qkb_instance_id = fields.Many2one('quickbooks.connect', string='Quickbooks Instance',
                                   help='Select Instance Id')
     quickbooks_operation_line_ids = fields.One2many("quickbooks.log.vts.line", "quickbooks_operation_id",
-                                                 string="Operation")
+                                                 string="Operation",ondelete='cascade')
     quickbooks_operation_message = fields.Char(string="Message")
     create_date = fields.Datetime(string='Created on')
 
@@ -35,15 +35,6 @@ class QuickbooksLog(models.Model):
             if type(vals) == dict:
                 vals.update({'name': name, 'company_id': company_id})
         return super(QuickbooksLog, self).create(vals_list)
-
-    def unlink(self):
-        """
-        This method is used for unlink appropriate log and logline both from both log model
-        """
-        for selected_main_log in self:
-            if selected_main_log.quickbooks_operation_line_ids:
-                selected_main_log.quickbooks_operation_line_ids.unlink()
-        return super(QuickbooksLog, self).unlink()
 
     def generate_quickbooks_logs(self, quickbooks_operation_name, quickbooks_operation_type, instance,
                               quickbooks_operation_message):
@@ -113,3 +104,11 @@ class QuickbooksLogLine(models.Model):
 
         self.create(vals)
         return log_line_id
+
+    def unlink(self):
+        parent_logs = self.mapped('quickbooks_operation_id')
+        res = super(QuickbooksLogLine, self).unlink()
+        for log in parent_logs:
+            if not log.quickbooks_operation_line_ids:
+                log.unlink()
+        return res

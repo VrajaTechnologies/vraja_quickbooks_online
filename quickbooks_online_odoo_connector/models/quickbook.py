@@ -17,6 +17,11 @@ class QuickbooksConnect(models.Model):
 	export_moves_point_date = fields.Date(string="Export Date Point",default=fields.Date.today(),help="Invoices/Bills export date point.")
 	exp_qbk_moves_next_call_point = fields.Datetime(string="Next Export Point",compute="_compute_moves_next_exp_call")
 
+	def unlink(self):
+		for rec in self:
+			self.env['qbo.product.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
+		return super(QuickbooksConnect, self).unlink()
+
 	def _compute_moves_next_exp_call(self):
 		cron = self.env.ref('quickbooks_online_odoo_connector.excute_export_moves_to_quickbooks',raise_if_not_found=False,)
 		value = cron.nextcall if cron else False
@@ -73,21 +78,21 @@ class QuickbooksConnect(models.Model):
 				qbk.export_moves_point_date = fields.Date.today()
 
 	def export_payments_to_qbk(self):
-	    QBConnect = self.env['quickbooks.connect'].sudo()
-	    AccountPayment = self.env['account.payment'].sudo()
-	    quickbook_instances = QBConnect.search([('state', '=', 'connected'),('auto_export_payments', '=', True)])
-	    for qbk in quickbook_instances:
-	        payments_domain = [('date', '>=', qbk.export_moves_point_date),
-					            ('state', 'in', ['in_process', 'paid']),
-					            ('error_in_export', '=', False),
-					            ('company_id', '=', qbk.company_id.id)]
-	        payments = AccountPayment.search(payments_domain)
+		QBConnect = self.env['quickbooks.connect'].sudo()
+		AccountPayment = self.env['account.payment'].sudo()
+		quickbook_instances = QBConnect.search([('state', '=', 'connected'),('auto_export_payments', '=', True)])
+		for qbk in quickbook_instances:
+			payments_domain = [('date', '>=', qbk.export_moves_point_date),
+								('state', 'in', ['in_process', 'paid']),
+								('error_in_export', '=', False),
+								('company_id', '=', qbk.company_id.id)]
+			payments = AccountPayment.search(payments_domain)
 
-	        outbound_payments = payments.filtered(lambda p: p.payment_type == 'outbound' and not p.is_bill_pay_exported)
-	        inbound_payments = payments.filtered(lambda p: p.payment_type == 'inbound' and not p.is_inv_pay_exported)
+			outbound_payments = payments.filtered(lambda p: p.payment_type == 'outbound' and not p.is_bill_pay_exported)
+			inbound_payments = payments.filtered(lambda p: p.payment_type == 'inbound' and not p.is_inv_pay_exported)
 
-	        for payment in outbound_payments:
-	            payment.export_bill_payment_qbo(payment)
+			for payment in outbound_payments:
+				payment.export_bill_payment_qbo(payment)
 
-	        for payment in inbound_payments:
-	            payment.export_payment_qbo(payment)
+			for payment in inbound_payments:
+				payment.export_payment_qbo(payment)
