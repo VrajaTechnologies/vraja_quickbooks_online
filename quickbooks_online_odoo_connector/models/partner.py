@@ -92,6 +92,7 @@ class ResPartner(models.Model):
                     quickbooks_operation_type="export",instance=quickbook_instance.id,
                     quickbooks_operation_message=f"Successfully Exported {partner.name}",process_request_message=data,
                     process_response_message=response_json,log_id=log_id)
+                    return qbk_id
                 else:
                     partner.error_in_export = True
                     error_msg = response_json
@@ -102,6 +103,7 @@ class ResPartner(models.Model):
                     quickbooks_operation_type="export",instance=quickbook_instance.id,
                     quickbooks_operation_message=f"Export {partner.name} Failed",process_request_message=data,
                     process_response_message=response_json,log_id=log_id,fault_operation=True)
+                    return f"Failed to export {partner.name} to QuickBooks ({endpoint}). Response: {error_msg}"
             except Exception as e:
                 partner.error_in_export = True
                 partner.message_post(body=f"Exception while exporting {partner.name} to QuickBooks: {str(e)}")
@@ -109,6 +111,7 @@ class ResPartner(models.Model):
                     instance=quickbook_instance.id,quickbooks_operation_message=f"Exception in {partner.name}",
                     process_request_message=data,process_response_message=str(e),
                     log_id=log_id,fault_operation=True)
+                return f"Exception while exporting {partner.name} to QuickBooks: {str(e)}"
 
         else:
             partner.message_post(body=f"No QuickBooks instance configured for {company} company.")

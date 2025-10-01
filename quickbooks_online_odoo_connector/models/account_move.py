@@ -175,14 +175,19 @@ class AccountMove(models.Model):
 			instance=quickbook_instance.id,quickbooks_operation_message=f"Starting export for Invoice {invoice.name}")
 
 		if not invoice.partner_id.qbk_id:
-			msg = f"Customer {invoice.partner_id.name} not mapped with QuickBooks."
-			invoice.message_post(body=msg)
-			invoice.error_in_export = True
-			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="invoice",
-				quickbooks_operation_type="export",instance=quickbook_instance.id,
-				quickbooks_operation_message=msg,process_request_message={},
-				process_response_message={},log_id=log_id,fault_operation=True)
-			return
+			qbk_id = invoice.partner_id._export_to_quickbooks(invoice.partner_id, 'customer', 'qbk_id')
+			if invoice.partner_id.qbk_id:
+				msg = f"Customer {invoice.partner_id.name} Created into QuickBooks."
+				invoice.message_post(body=msg)
+			else:
+				msg = qbk_id
+				invoice.message_post(body=msg)
+				invoice.error_in_export = True
+				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="invoice",
+					quickbooks_operation_type="export",instance=quickbook_instance.id,
+					quickbooks_operation_message=msg,process_request_message={},
+					process_response_message={},log_id=log_id,fault_operation=True)
+				return
 
 		try:
 
@@ -297,15 +302,19 @@ class AccountMove(models.Model):
 		)
 
 		if not bill.partner_id.qbk_vendor_id:
-			msg = f"Vendor {bill.partner_id.name} not mapped with QuickBooks."
-			bill.message_post(body=msg)
-			bill.error_in_export = True
-			self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-				quickbooks_operation_name="bill",quickbooks_operation_type="export",
-				instance=quickbook_instance.id,quickbooks_operation_message=msg,
-				process_request_message={},process_response_message={},
-				log_id=log_id,fault_operation=True)
-			return
+			qbk_vendor_id = bill.partner_id._export_to_quickbooks(bill.partner_id, 'vendor', 'qbk_vendor_id')
+			if bill.partner_id.qbk_vendor_id:
+				msg = f"Vendor {bill.partner_id.name} Created into QuickBooks."
+				bill.message_post(body=msg)
+			else:
+				msg = qbk_vendor_id
+				bill.message_post(body=msg)
+				bill.error_in_export = True
+				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="bill",
+					quickbooks_operation_type="export",instance=quickbook_instance.id,
+					quickbooks_operation_message=msg,process_request_message={},
+					process_response_message={},log_id=log_id,fault_operation=True)
+				return
 		
 		qbo_bill_val = self._prepare_qbo_vendor_bill_vals(bill, quickbook_instance, log_id)
 
