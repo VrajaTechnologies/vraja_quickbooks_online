@@ -88,10 +88,14 @@ class AccountPayment(models.Model):
         return res
 
     def _prepare_billpayment_payload(self, payment, payment_account):
+        bills = self.reconciled_bill_ids.sudo().filtered(lambda inv: inv.move_type == "in_invoice")
+        first_bill = bills[:1]
+        vendor_id = first_bill.partner_id.qbk_vendor_id if first_bill else ""
+        vendor_name = first_bill.partner_id.name if first_bill else ""
 
         bill_payment_payload = {"DocNumber": payment.name,
-                "VendorRef": {"value": payment.partner_id.qbk_vendor_id or "",
-                            "name": payment.partner_id.name},
+                "VendorRef": {"value": vendor_id,
+                            "name": vendor_name},
                 "PayType": "CreditCard" if payment.payment_method_line_id.payment_method_id.code == "credit" else "Check",
                 "TxnDate": str(payment.date),
                 "TotalAmt": payment.amount,
@@ -248,7 +252,7 @@ class AccountPayment(models.Model):
             return
 
         company = payment.company_id.id if payment.company_id else False
-        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
         if not quickbook_instance:
             payment.message_post(body=f"No QuickBooks instance configured for {company} company.")

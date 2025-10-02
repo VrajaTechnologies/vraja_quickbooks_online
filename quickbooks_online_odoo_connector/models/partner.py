@@ -37,7 +37,7 @@ class ResPartner(models.Model):
 
     def _export_to_quickbooks(self, partner, endpoint, qbk_field):
         company = partner.company_id.id if partner.company_id else self.env.company.id
-        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
         if quickbook_instance:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name=endpoint,

@@ -39,7 +39,7 @@ class AccountMove(models.Model):
 	            continue
 
 	        company = move.company_id.id if move.company_id else False
-	        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+	        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
 	        if not (quickbook_instance and quickbook_instance.access_token and quickbook_instance.realm_id):
 	            move.message_post(body=f"QuickBooks Update Failed: Authentication required")
@@ -164,7 +164,7 @@ class AccountMove(models.Model):
 			return
 
 		company = invoice.company_id.id if invoice.company_id else False
-		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
 		if not quickbook_instance:
 			invoice.message_post(body=f"No QuickBooks instance configured for {company} company.")
@@ -252,15 +252,20 @@ class AccountMove(models.Model):
 		line_number = 1
 		for line in bill.invoice_line_ids:
 
-			if not line.product_id.qkb_product_ID:
-				msg = f"Product {line.product_id.name} not mapped with QuickBooks."
-				bill.message_post(body=msg)
-				self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
-					quickbooks_operation_name="invoice",quickbooks_operation_type="export",
-					instance=quickbook_instance.id,quickbooks_operation_message=msg,
-					process_request_message={},process_response_message={},
-					log_id=log_id,fault_operation=True)
-				continue
+			if not line.product_id.product_tmpl_id.qkb_product_ID:
+				qbk_product_id = line.product_id.product_tmpl_id.export_product_to_qbk()
+				if line.product_id.product_tmpl_id.qkb_product_ID:
+					msg = f"Product {line.product_id.name} Created into QuickBooks."
+					bill.message_post(body=msg)
+				else:
+					msg = qbk_product_id
+					bill.message_post(body=msg)
+					bill.error_in_export = True
+					self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name="bill",
+						quickbooks_operation_type="export",instance=quickbook_instance.id,
+						quickbooks_operation_message=msg,process_request_message={},
+						process_response_message={},log_id=log_id,fault_operation=True)
+					return
 				
 			qbo_bill_val["Line"].append({
 					"DetailType": "ItemBasedExpenseLineDetail",
@@ -288,7 +293,7 @@ class AccountMove(models.Model):
 			return
 
 		company = bill.company_id.id if bill.company_id else False
-		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('company_id', '=', company)], limit=1)
+		quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state','=','connected'),('company_id', '=', company)], limit=1)
 
 		if not quickbook_instance:
 			bill.message_post(body=f"No QuickBooks instance configured for {company} company.")
