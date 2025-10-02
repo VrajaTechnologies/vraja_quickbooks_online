@@ -226,7 +226,14 @@ class AccountPayment(models.Model):
             "Line": []
         }
 
-        for inv in payment.reconciled_invoice_ids.filtered(lambda m: m.move_type == 'out_invoice'):
+        invoices = payment.reconciled_invoice_ids.sudo().filtered(lambda m: m.move_type == 'out_invoice')
+        if invoices:
+            first_inv = invoices[0]
+            if first_inv.partner_id.id != payment.partner_id.id:
+                payment_payload["CustomerRef"]["value"] = first_inv.partner_id.qbk_id or ""
+                payment_payload["CustomerRef"]["name"] = first_inv.partner_id.name
+
+        for inv in invoices:
             if inv.qbk_invoice_id:
                 line_val = {
                     "Amount": inv.amount_residual if payment.amount != inv.amount_total else inv.amount_total,
