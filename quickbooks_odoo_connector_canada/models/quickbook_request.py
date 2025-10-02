@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from odoo import models
 
 class QuickbooksAPIVts(models.AbstractModel):
@@ -7,6 +8,5 @@ class QuickbooksAPIVts(models.AbstractModel):
 
     def _get_operation_map(self):
         operation_map = super(QuickbooksAPIVts, self)._get_operation_map()
-        operation_map.update({'import_product': 'Item','import_vendor': 'Vendor' })
-
+        operation_map.update({'import_ca_product': 'Item','import_vendor': 'Vendor'})
         return operation_map

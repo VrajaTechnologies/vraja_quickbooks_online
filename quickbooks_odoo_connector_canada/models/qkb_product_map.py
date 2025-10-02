@@ -4,7 +4,7 @@ from odoo import models, fields, api
 
 class QuickbooksProduct(models.Model):
 
-    _name = 'qbo.product.vts'
+    _name = 'qbo.product.ca.map.vts'
     _description = "Quickbooks product"
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
