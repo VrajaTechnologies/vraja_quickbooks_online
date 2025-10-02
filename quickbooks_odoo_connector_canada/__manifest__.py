@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+{
+    # App information
+    'name': 'Quickbooks Odoo Connector Canada',
+    'category': 'Website',
+    'version': '18.0.0.0.1',
+    'summary': """Quickbooks Odoo Connector Canada""",
+    'license': 'OPL-1',
+
+    # Dependencies
+    'depends': ["quickbooks_connector_vts", "stock"],
+
+    # Views
+    'data': [
+        'views/qkb_product_map_view.xml',
+        'views/quickbooks_view.xml',
+        'views/qkb_vendor_map_view.xml',
+        'wizard/quickbook_operation_view.xml',
+    ],
+
+    # Author
+    'author': 'Vraja Technologies',
+    'website': 'http://www.vrajatechnologies.com',
+    'maintainer': 'Vraja Technologies',
+
+    # Technical
+    'demo': [],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'live_test_url': 'https://www.vrajatechnologies.com/contactus',
+}

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_qkb_vendor_list" model="ir.ui.view">
+        <field name="name">qbo.vendor.vts.list</field>
+        <field name="model">qbo.vendor.vts</field>
+        <field name="arch" type="xml">
+            <list string="Quickbooks vendor" editable="bottom">
+                <field name="quickbook_instance_id" readonly="1"/>
+                <field name="quickbook_vendor_id" readonly="1"/>
+                <field name="quickbook_vendor_name" readonly="1"/>
+                <field name="vendor_id"/>
+                <button name="vendor_mapping_view" type="object" string="View" class="btn btn-link"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_qkb_vendor_map" model="ir.actions.act_window">
+        <field name="name">Quickbooks Vendor</field>
+        <field name="res_model">qbo.vendor.vts</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_qkb_vendor_list"/>
+    </record>
+    <menuitem id="menu_qkb_product"
+              name="Product"
+              parent="quickbooks_connector_vts.main_mapping_menu"
+              action="action_qkb_vendor_map" sequence="10"/>
+</odoo>

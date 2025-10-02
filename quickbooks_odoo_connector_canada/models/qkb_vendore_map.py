@@ -1,0 +1,25 @@
+from odoo import models, fields, api
+
+
+class QuickbooksVendor(models.Model):
+
+    _name = 'qbo.vendor.vts'
+    _description = "Quickbooks vendor"
+
+    quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
+    quickbook_vendor_id = fields.Char(string="Vendor ID")
+    quickbook_vendor_name = fields.Char(string="vendor Name")
+    vendor_id = fields.Many2one('res.partner', string="Vendore")
+    company_id = fields.Many2one('res.company', string="Company", default=lambda self: self.env.user.company_id)
+    qbo_response = fields.Text(string="JSON Body")
+
+    def vendor_mapping_view(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Quickbooks Product',
+            'res_model': 'qbo.product.vts',
+            'view_mode': 'form',
+            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_product_form').id,
+            'res_id': self.id,
+            'target': 'current'}
