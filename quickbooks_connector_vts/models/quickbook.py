@@ -33,6 +33,7 @@ class QuickbooksConnect(models.Model):
     qck_payment_term_count = fields.Integer(string="Payment Terms Counts", compute='_compute_payment_term_count')
     qck_account_count = fields.Integer(string="Account Counts", compute='_compute_account_count')
     qck_taxes_count = fields.Integer(string="Taxes Count", compute='_compute_taxes_count')
+    qbk_scope_ids = fields.Many2many('quickbooks.scope','rel_quick_connect_scope',string="Features",default=lambda self: self.env.ref('quickbooks_connector_vts.quickbooks_scope_accounting'))
 
     def action_quickbook_open_instance_view_form(self):
         form_id = self.sudo().env.ref('quickbooks_connector_vts.quickbooks_connect_form_view')
@@ -56,8 +57,8 @@ class QuickbooksConnect(models.Model):
             self.quickbook_base_url = "https://sandbox-quickbooks.api.intuit.com/v3/company"
 
     def action_connect_quickbooks(self):
-        scopes = "com.intuit.quickbooks.accounting com.intuit.quickbooks.payment"
-        encoded_scopes = urllib.parse.quote(scopes)
+        scope_values = " ".join(self.qbk_scope_ids.mapped('value'))
+        encoded_scopes = urllib.parse.quote(scope_values)
         auth_url = (
             f"https://appcenter.intuit.com/connect/oauth2"
             f"?client_id={self.client_id}"
@@ -153,4 +154,11 @@ class QuickbooksConnect(models.Model):
             self.env['qbo.account.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
             self.env['qbo.taxes.vts'].sudo().search([('quickbook_instance_id', '=', rec.id)]).unlink()
         return super(QuickbooksConnect, self).unlink()
+
+class QuickbooksScope(models.Model):
+    _name = "quickbooks.scope"
+    _description = "QuickBooks Scope"
+
+    name = fields.Char(string="Scope Name")
+    value = fields.Char(string="Scope Value")
 

@@ -87,6 +87,7 @@
 	                                <field name="access_token" invisible="1"/>
 	                                <field name="refresh_token" invisible="1"/>
 	                        		<field name="reason" readonly="1"/>
+                                    <field name="qbk_scope_ids" widget="many2many_checkboxes" readonly="state == 'connected'"/>
                             	</group>
                             	<group>
 	                                <field name="redirect_url" required="1" readonly="state == 'connected'"/>

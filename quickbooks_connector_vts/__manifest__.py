@@ -13,6 +13,7 @@
     # Views
     'data': [
         'security/ir.model.access.csv',
+        'data/scope_data.xml',
         'data/cron.xml',
         'wizard/quickbook_operations_view.xml',
         'views/quickbook_view.xml',
