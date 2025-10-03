@@ -26,7 +26,7 @@
             <xpath expr="//filter[@name='inactive']" position="after">
                 <separator/>
                 <filter string="Quickbook Customers" name="quickbook_partners"
-                        domain="[('qck_instance_id', '!=', False)]"/>
+                        domain="[('qbk_id', '!=', False)]"/>
             </xpath>
             <xpath expr="//filter[@name='group_country']" position="after">
                 <separator/>

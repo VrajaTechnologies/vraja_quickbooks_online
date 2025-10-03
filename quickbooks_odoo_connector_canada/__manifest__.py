@@ -19,6 +19,8 @@
         'views/qkb_category_map.xml',
         'views/partner_view.xml',
         'views/quickbooks_view.xml',
+        'views/product_termplate_view.xml',
+        'views/product_category_view.xml',
     ],
 
     # Author

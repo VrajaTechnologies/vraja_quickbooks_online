@@ -17,11 +17,13 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_res_partner_filter"/>
         <field name="arch" type="xml">
-            <xpath expr="//filter[@name='type_company']" position="after">
-                <separator/>
+            <xpath expr="//filter[@name='quickbook_partners']" position="after">
                 <filter string="Quickbook Vendor"
                         name="quickbook_vendor"
-                        domain="[('qck_instance_id', '!=', False)]"/>
+                        domain="[('qkca_vendor_ID', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_Quickbook']" position="attributes">
+                <attribute name="string">Quickbooks</attribute>
             </xpath>
         </field>
     </record>
