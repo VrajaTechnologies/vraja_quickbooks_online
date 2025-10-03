@@ -7,6 +7,7 @@ class QuickbooksConnect(models.Model):
 
     qkca_product_creation = fields.Boolean(string="Product Creation",help="Enable this option to create a product if does not exist when importing.",copy=False)
     qkca_vendor_creation = fields.Boolean(string="Vendor Creation", help="Enable this option to create a vendor if does not exist when importing",copy=False)
+    qkca_category_creation = fields.Boolean(string="Product Category Creation",help="Enable this option to create a product category if does not exist when importing.",copy=False)
     qca_product_count = fields.Integer(string="Product Count")
     qca_vendor_count = fields.Integer(string="Vendor Count")
 

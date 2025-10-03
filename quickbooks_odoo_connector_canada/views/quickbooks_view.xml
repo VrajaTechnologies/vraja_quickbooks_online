@@ -8,6 +8,7 @@
             <xpath expr="//field[@name='account_creation']" position="after">
                 <field name="qkca_product_creation"/>
                 <field name="qkca_vendor_creation"/>
+                <field name="qkca_category_creation"/>
             </xpath>
             <xpath expr="//div[@class='oe_button_box']" position="inside">
                 <button name="action_qkb_product"

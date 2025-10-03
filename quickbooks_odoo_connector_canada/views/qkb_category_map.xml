@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_qbo_category_map_form" model="ir.ui.view">
+        <field name="name">qbo.category.ca.map.vts.form</field>
+        <field name="model">qbo.category.ca.map.vts</field>
+        <field name="arch" type="xml">
+            <form string="QuickBooks Category Map">
+                <sheet>
+                    <group>
+                        <field name="quickbook_instance_id" readonly="1"/>
+                        <field name="quickbook_category_id" readonly="1"/>
+                        <field name="quickbook_category_name" readonly="1"/>
+                        <field name="category_id"/>
+                        <field name="company_id"/>
+                        <field name="qbo_response" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- QuickBooks Category List View -->
+    <record id="view_qkb_category_ca_list" model="ir.ui.view">
+        <field name="name">qbo.category.ca.map.vts.list</field>
+        <field name="model">qbo.category.ca.map.vts</field>
+        <field name="arch" type="xml">
+            <list string="QuickBooks Category" editable="bottom">
+                <field name="quickbook_instance_id" readonly="1"/>
+                <field name="quickbook_category_id" readonly="1"/>
+                <field name="quickbook_category_name" readonly="1"/>
+                <field name="category_id"/>
+                <button name="category_mapping_view" type="object" string="View" class="btn btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action for QuickBooks Category -->
+    <record id="action_qkca_category_map" model="ir.actions.act_window">
+        <field name="name">QuickBooks Category</field>
+        <field name="res_model">qbo.category.ca.map.vts</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_qkb_category_ca_list"/>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_qkca_category"
+              name="Category"
+              parent="quickbooks_connector_vts.main_mapping_menu"
+              action="action_qkca_category_map"
+              sequence="2"/>
+</odoo>

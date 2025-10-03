@@ -5,10 +5,9 @@ import pprint
 class QuickbooksWizardInherit(models.TransientModel):
     _inherit = "quickbooks.operations"
 
-    import_operations = fields.Selection(selection_add=[("import_ca_product", "Import Product"),("import_vendor", "Import Vendor")])
+    import_operations = fields.Selection(selection_add=[("import_ca_product", "Import Product"),("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category")])
 
-
-    def qkca_product_creation(self, product):
+    def _prepare_product_creation(self, product):
         product_type = product.get('Type')
 
         type_mapping = {
@@ -71,7 +70,7 @@ class QuickbooksWizardInherit(models.TransientModel):
 
                 pr_created = False
                 if not product_detail and self.quickbook_instance_id.qkca_product_creation:
-                    product_detail = self.qkca_product_creation(product)
+                    product_detail = self._prepare_product_creation(product)
                     pr_created = True
 
                 product_mapping =self.env['qbo.product.ca.map.vts'].sudo().search([('quickbook_product_id', '=', qkb_product_id)],limit=1)
@@ -174,6 +173,125 @@ class QuickbooksWizardInherit(models.TransientModel):
                     }
                     vendor_detail = self.env['res.partner'].sudo().create(vendor_vals)
 
+    def _prepare_category_creation(self, category_data):
+
+        ProductCategory = self.env['product.category'].sudo()
+
+        qkb_category_id = category_data.get('Id')
+        qkb_category_name = category_data.get('Name', '').strip()
+
+        category = ProductCategory.search(['|', ('name', '=', qkb_category_name),('qkca_category_ID', '=', qkb_category_id)], limit=1)
+        if category:
+            return category
+
+        parent_category = False
+        parent_ref = category_data.get('ParentRef')
+        if parent_ref:
+            parent_category = ProductCategory.search([('qkca_category_ID', '=', parent_ref.get('value'))], limit=1)
+            if not parent_category:
+                parent_category = self._prepare_category_creation({'Id': parent_ref.get('value'),
+                    'Name': parent_ref.get('name'),})
+
+        category_vals = {
+            'name': qkb_category_name,
+            'qkca_category_ID': qkb_category_id,
+            'parent_id': parent_category.id if parent_category else False,\
+            'qck_instance_id':self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+        }
+        category = ProductCategory.create(category_vals)
+
+        return category
+
+
+    def get_category_from_quickbooks(self, category_info, category_status):
+
+        if category_status == 200 and category_info and 'QueryResponse' in category_info:
+            category_items = category_info['QueryResponse'].get('Item', [])
+            instance_id = getattr(self.quickbook_instance_id, 'id', False)
+            company_id = self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id
+
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='product_category',quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='QuickBooks to fetch Categories')
+
+            quickbook_map_category, quickbook_map_category_log_ln = [], []
+
+            for category in category_items:
+                qkb_category_name = (category.get('Name') or '').strip()
+                qkb_category_id = category.get('Id')
+
+                category_detail = False
+                if qkb_category_name:
+                    category_detail = self.env['product.category'].sudo().search([
+                        '|', ('name', '=', qkb_category_name), ('qkca_category_ID', '=', qkb_category_id)
+                    ], limit=1)
+
+                cat_created = False
+                if not category_detail and self.quickbook_instance_id.qkca_category_creation:
+                    category_detail = self._prepare_category_creation(category)
+                    cat_created = True
+
+                category_mapping = self.env['qbo.category.ca.map.vts'].sudo().search([('quickbook_category_id', '=', qkb_category_id)], limit=1)
+                qbo_response = pprint.pformat(category)
+
+                if not category_mapping:
+
+                    mapping_vals = {
+                        'quickbook_instance_id': instance_id,'quickbook_category_id': qkb_category_id,
+                        'quickbook_category_name': qkb_category_name,'category_id': getattr(category_detail, 'id', False),
+                        'company_id': company_id,'qbo_response': qbo_response}
+                    quickbook_map_category.append(mapping_vals)
+
+                    if not category_detail:
+                        log_message = f"Category doesn't match with QuickBooks Category: {qkb_category_name}"
+                        fault = True
+                    else:
+                        log_message = f"{'Category successfully created and ' if cat_created else ''}mapped with QuickBooks category: {qkb_category_name}"
+                        category_detail.write({
+                            'qck_instance_id': instance_id,
+                            'qkca_category_ID': qkb_category_id})
+                        fault = False
+
+                    quickbook_map_category_log_ln.append({'quickbooks_operation_name': 'product_category',
+                        'quickbooks_operation_type': 'import','qkb_instance_id': instance_id,
+                        'quickbooks_operation_message': log_message,'process_response_message': qbo_response,
+                        'quickbooks_operation_id': log_id.id if log_id else False,'fault_operation': fault})
+
+                else:
+
+                    if category_detail and qkb_category_id:
+                        category_detail.write({
+                            'qkca_category_ID': qkb_category_id,
+                            'qck_instance_id': instance_id})
+
+                    category_mapping.sudo().write({
+                        'category_id': getattr(category_detail, 'id', False),'quickbook_instance_id': instance_id,
+                        'qbo_response': qbo_response})
+
+                    quickbook_map_category_log_ln.append({'quickbooks_operation_name': 'product_category',
+                        'quickbooks_operation_type': 'import','qkb_instance_id': instance_id,
+                        'quickbooks_operation_message': f"Category updated with QuickBooks category: {qkb_category_name}",
+                        'process_response_message': qbo_response,
+                        'quickbooks_operation_id': log_id.id if log_id else False})
+
+            if quickbook_map_category:
+                self.env['qbo.category.ca.map.vts'].sudo().create(quickbook_map_category)
+            if quickbook_map_category_log_ln:
+                self.env['quickbooks.log.vts.line'].sudo().create(quickbook_map_category_log_ln)
+
+        else:
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='product_category',quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Failed to fetch Categories')
+
+            self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                quickbooks_operation_name='product_category',quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Error during categories import process',
+                process_response_message=pprint.pformat(category_info),log_id=log_id,fault_operation=True)
+
 
     def execute_process_of_quickbooks(self):
         res = super(QuickbooksWizardInherit, self).execute_process_of_quickbooks()
@@ -195,5 +313,11 @@ class QuickbooksWizardInherit(models.TransientModel):
                     company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
 
                 qk_vendor_details = self.get_vendor_from_quickbooks(vendor_info, vendor_status)
+
+            if self.import_operations == 'import_pro_category':
+                category_info, category_status = self.env['quickbooks.api.vts'].sudo().get_data_from_quickbooks(qck_url,
+                    company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
+
+                qk_category_details = self.get_category_from_quickbooks(category_info, category_status)
 
         return res
