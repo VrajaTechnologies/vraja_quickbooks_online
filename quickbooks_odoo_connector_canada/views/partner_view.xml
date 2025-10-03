@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="qk_vendor_inherit_form_view_vts" model="ir.ui.view">
+        <field name="name">qk.vendor.form.view.inherit.vts</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='quickbook_api']" position="inside">
+                <group>
+                    <field name="qkca_vendor_ID" readonly="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_vendor_filter" model="ir.ui.view">
+        <field name="name">vendor.filter.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='type_company']" position="after">
+                <separator/>
+                <filter string="Quickbook Vendor"
+                        name="quickbook_vendor"
+                        domain="[('qck_instance_id', '!=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

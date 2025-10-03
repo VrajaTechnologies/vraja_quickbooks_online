@@ -8,23 +8,23 @@ class QuickbooksConnect(models.Model):
     qkca_product_creation = fields.Boolean(string="Product Creation",help="Enable this option to create a product if does not exist when importing.",copy=False)
     qkca_vendor_creation = fields.Boolean(string="Vendor Creation", help="Enable this option to create a vendor if does not exist when importing",copy=False)
     qkca_category_creation = fields.Boolean(string="Product Category Creation",help="Enable this option to create a product category if does not exist when importing.",copy=False)
-    qca_product_count = fields.Integer(string="Product Count")
-    qca_vendor_count = fields.Integer(string="Vendor Count")
+    qca_product_count = fields.Integer(string="Product Count",compute="_compute_product_count")
+    qca_vendor_count = fields.Integer(string="Vendor Count",compute="_compute_vendor_count")
 
-    # def _compute_product_count(self):
-    #     for rec in self:
-    #         rec.qck_product_count = self.env['product.template'].search_count([('qck_instance_id', '=', rec.id)])
-    #
+    def _compute_product_count(self):
+        for rec in self:
+            rec.qca_product_count = self.env['product.template'].sudo().search_count([('qck_instance_id', '=', rec.id)])
+
     def action_qkb_product(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id('product.product_template_action')
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
 
-    # def _compute_vendor_count(self):
-    #     for rec in self:
-    #         rec.qck_vendor_count = self.env['res.partner'].search_count([('qck_instance_id', '=', rec.id)])
-    #
+    def _compute_vendor_count(self):
+        for rec in self:
+            rec.qca_vendor_count = self.env['res.partner'].search_count([('qck_instance_id', '=', rec.id)])
+
     def action_qkb_vendor(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id('account.res_partner_action_supplier')

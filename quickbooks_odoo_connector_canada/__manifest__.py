@@ -14,10 +14,11 @@
     'data': [
         'security/ir.model.access.csv',
         'wizard/quickbook_operation_view.xml',
-        'views/quickbooks_view.xml',
         'views/qkb_product_map_view.xml',
         'views/qkb_vendor_map_view.xml',
         'views/qkb_category_map.xml',
+        'views/partner_view.xml',
+        'views/quickbooks_view.xml',
     ],
 
     # Author

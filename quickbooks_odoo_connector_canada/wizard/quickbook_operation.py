@@ -117,6 +117,7 @@ class QuickbooksWizardInherit(models.TransientModel):
                     }
                     if product_detail and qkb_product_id:
                         product_detail.qkca_product_ID = qkb_product_id
+                        product_detail.qck_instance_id = self.quickbook_instance_id.id if self.quickbook_instance_id else False
                     product_mapping.sudo().write(mapping_vals)
                     product_log_vals = {
                             'quickbooks_operation_name': 'product',
@@ -143,35 +144,148 @@ class QuickbooksWizardInherit(models.TransientModel):
                 quickbooks_operation_message='Error during products import process',
                 process_response_message=pprint.pformat(product_info),log_id=log_id,fault_operation=True)
 
-    def get_vendor_from_quickbooks(self,vendor_info, vendor_status):
+    def qbk_ca_vendor_creation(self,vendor):
+
+        bill_addr = vendor.get('BillAddr', {})
+
+        country_name = bill_addr.get('Country')
+        country = self.env['res.country'].search([('name', '=', country_name)], limit=1)
+
+        state_code = bill_addr.get('CountrySubDivisionCode')
+        state = self.env['res.country.state'].search([('code', '=', state_code)], limit=1)
+
+        parent_vendor = False
+        is_company = True
+        if vendor.get('ParentRef') and vendor.get('ParentRef').get('value'):
+            parent_qk_id = vendor['ParentRef']['value']
+            parent_vendor = self.env['res.partner'].sudo().search([('qkca_vendor_ID', '=', parent_qk_id)], limit=1)
+            is_company = False
+
+        vendor_vals = {
+            'name': vendor.get('DisplayName', '').strip() or vendor.get('CompanyName', '').strip(),
+            'street': bill_addr.get('Line1', ''),
+            'street2': bill_addr.get('Line2', ''),
+            'state_id': state.id if state else False,
+            'zip': bill_addr.get('PostalCode', ''),
+            'country_id': country.id if country else False,
+            'city': bill_addr.get('City', ''),
+            'mobile': vendor.get('PrimaryPhone', {}).get('FreeFormNumber', ''),
+            'email': vendor.get('PrimaryEmailAddr', {}).get('Address', ''),
+            'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+            'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+            'is_company': is_company,
+            'parent_id': parent_vendor.id if parent_vendor else False,
+            'qkca_vendor_ID': vendor.get('Id'),
+        }
+        vendor = self.env['res.partner'].create(vendor_vals)
+        return vendor
+
+    def get_vendor_from_quickbooks(self, vendor_info, vendor_status):
+
         if vendor_status == 200 and vendor_info and 'QueryResponse' in vendor_info:
             vendor_details = vendor_info.get('QueryResponse').get('Vendor')
 
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
-                quickbooks_operation_name='vendor',quickbooks_operation_type='import',
+                quickbooks_operation_name='vendor', quickbooks_operation_type='import',
                 instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                quickbooks_operation_message='Quickbooks to fetch Vendors')
+                quickbooks_operation_message='Quickbooks to fetch Items')
 
             quickbook_map_vendor = []
             quickbook_map_vendor_log_ln = []
+
             for vendor in vendor_details:
                 qkb_vendor_name = vendor.get('DisplayName').strip()
-                qbo_vendor_id = vendor.get('Id', '')
+                qkb_vendor_id = vendor.get('Id', '')
+                qkb_vnd_email = vendor.get('PrimaryEmailAddr', {}).get('Address', '')
 
                 vendor_detail = False
                 if qkb_vendor_name:
-                    vendor_detail = self.env['res.partner'].sudo().search(
-                        ['|', ('name', '=', qkb_vendor_name), ('qkca_vendor_ID', '=', qbo_vendor_id)], limit=1)
+                    vendor_detail = self.env['res.partner'].sudo().search(['|', ('name', '=', qkb_vendor_name), ('qkca_vendor_ID', '=', qkb_vendor_id)], limit=1)
 
-                vendor_create = False
+                if not vendor_detail and qkb_vnd_email:
+                    vendor_detail = self.env['res.partner'].sudo().search([('name', '=', qkb_vendor_name),('email', '=', qkb_vnd_email)],limit=1)
+
+                vendor_created = False
                 if not vendor_detail and self.quickbook_instance_id.qkca_vendor_creation:
-                    vendor_vals = {
-                        'name': qkb_vendor_name,
-                        'qkca_vendor_ID': qbo_vendor_id,
-                        'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                    vendor_detail = self.qbk_ca_vendor_creation(vendor)
+                    vendor_created = True
+
+                vendor_mapping = self.env['qbo.vendor.ca.map.vts'].sudo().search([('quickbook_vendor_id', '=', qkb_vendor_id)], limit=1)
+                
+                if not vendor_mapping:
+                    mapping_vals = {
+                        'quickbook_vendor_name': qkb_vendor_name,
+                        'quickbook_vendor_id': qkb_vendor_id,
+                        'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'vendor_id': vendor_detail.id if vendor_detail else False,
                         'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+                        'qbo_response': pprint.pformat(vendor),
                     }
-                    vendor_detail = self.env['res.partner'].sudo().create(vendor_vals)
+                    quickbook_map_vendor.append(mapping_vals)
+                    if not vendor_detail:
+                        vendor_log_vals = {
+                            'quickbooks_operation_name': 'vendor',
+                            'quickbooks_operation_type': 'import',
+                            'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'quickbooks_operation_message': f"Vendor doesn't match with QuickBooks Vendor: {qkb_vendor_name}",
+                            'process_response_message': pprint.pformat(vendor),
+                            'quickbooks_operation_id': log_id.id if log_id else False,
+                            'fault_operation': True
+                        }
+                        quickbook_map_vendor_log_ln.append(vendor_log_vals)
+
+                    elif vendor_detail:
+                        vendor_detail.write(
+                            {'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                             'qkca_vendor_ID': qkb_vendor_id})
+
+                        vc_message = f"Vendor successfully mapped with QuickBooks Vendor: {qkb_vendor_name}"
+                        if vendor_created:
+                            vc_message = f"Vendor successfully created and mapped with QuickBooks vendor: {qkb_vendor_name}"
+
+                        vendor_log_vals = {
+                            'quickbooks_operation_name': 'vendor','quickbooks_operation_type': 'import',
+                            'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                            'quickbooks_operation_message': vc_message,'process_response_message': pprint.pformat(vendor),
+                            'quickbooks_operation_id': log_id.id if log_id else False,
+                        }
+                        quickbook_map_vendor_log_ln.append(vendor_log_vals)
+                else:
+                    mapping_vals = {
+                        'vendor_id': vendor_detail.id if vendor_detail else False,
+                        'qbo_response': pprint.pformat(vendor),
+                    }
+                    if vendor_detail and qkb_vendor_id:
+                        vendor_detail.qkca_vendor_ID = qkb_vendor_id
+                        vendor_detail.qck_instance_id = self.quickbook_instance_id.id if self.quickbook_instance_id else False
+                    vendor_mapping.sudo().write(mapping_vals)
+                    vendor_log_vals = {
+                        'quickbooks_operation_name': 'vendor',
+                        'quickbooks_operation_type': 'import',
+                        'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'quickbooks_operation_message': f"Vendor updated with QuickBooks Vendor: {qkb_vendor_name}",
+                        'process_response_message': pprint.pformat(vendor),
+                        'quickbooks_operation_id': log_id.id if log_id else False,
+                    }
+                    quickbook_map_vendor_log_ln.append(vendor_log_vals)
+
+            if quickbook_map_vendor:
+                vendor_mapped = self.env['qbo.vendor.ca.map.vts'].sudo().create(quickbook_map_vendor)
+            if quickbook_map_vendor_log_ln:
+                vendor_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(quickbook_map_vendor_log_ln)
+        else:
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='vendor',
+                quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Failed to fetch Vendor'
+                )
+            log_line = self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                quickbooks_operation_name='vendor',
+                quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Error during vendor import process',
+                process_response_message=pprint.pformat(vendor_info), log_id=log_id, fault_operation=True)
 
     def _prepare_category_creation(self, category_data):
 

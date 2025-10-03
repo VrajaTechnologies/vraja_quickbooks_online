@@ -19,9 +19,9 @@ class QuickbooksProduct(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Quickbooks Product',
-            'res_model': 'qbo.product.vts',
+            'res_model': 'qbo.product.ca.map.vts',
             'view_mode': 'form',
-            'view_id': self.env.ref('quickbooks_online_odoo_connector.view_qbo_product_form').id,
+            'view_id': self.env.ref('quickbooks_odoo_connector_canada.view_qkb_product_ca_form').id,
             'res_id': self.id,
             'target': 'current'}
 
