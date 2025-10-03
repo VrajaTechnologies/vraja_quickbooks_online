@@ -5,7 +5,7 @@ import pprint
 class QuickbooksWizardInherit(models.TransientModel):
     _inherit = "quickbooks.operations"
 
-    import_operations = fields.Selection(selection_add=[("import_ca_product", "Import Product"),("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category")])
+    import_operations = fields.Selection(selection_add=[("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category"),("import_ca_product", "Import Product")])
 
     def _prepare_product_creation(self, product):
         product_type = product.get('Type')
@@ -25,6 +25,11 @@ class QuickbooksWizardInherit(models.TransientModel):
         income_account = find_account(product.get('IncomeAccountRef'))
         expense_account = find_account(product.get('ExpenseAccountRef'))
 
+        parent_ref = product.get('ParentRef')
+        category = False
+        if parent_ref:
+            category = self.env['product.category'].sudo().search([('qkca_category_ID', '=', parent_ref.get('value'))], limit=1)
+
         product_val = {
             'name': product.get('Name', ''),
             'description_sale': product.get('Description', ''),
@@ -38,6 +43,7 @@ class QuickbooksWizardInherit(models.TransientModel):
             'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else False,
             'property_account_income_id': income_account.id if income_account else False,
             'property_account_expense_id': expense_account.id if expense_account else False,
+            'categ_id': category.id if category else False,
         }
 
         product_detail = self.env['product.template'].sudo().create(product_val)
