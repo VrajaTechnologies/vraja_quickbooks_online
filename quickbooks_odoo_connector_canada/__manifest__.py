@@ -13,10 +13,10 @@
     # Views
     'data': [
         'security/ir.model.access.csv',
-        'views/qkb_product_map_view.xml',
-        'views/quickbooks_view.xml',
-        'views/qkb_vendor_map_view.xml',
         'wizard/quickbook_operation_view.xml',
+        'views/qkb_product_map_view.xml',
+        'views/qkb_vendor_map_view.xml',
+        'views/quickbooks_view.xml',
     ],
 
     # Author

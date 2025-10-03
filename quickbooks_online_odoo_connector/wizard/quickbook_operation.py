@@ -136,11 +136,11 @@ class QuickbooksWizardInherit(models.TransientModel):
         else:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name='product',
                 quickbooks_operation_type='import',instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                quickbooks_operation_message='Failed to fetch customers'
+                quickbooks_operation_message='Failed to fetch Products'
             )
             log_line = self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(quickbooks_operation_name='product',
                 quickbooks_operation_type='import',instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                quickbooks_operation_message='Error during customer import process',
+                quickbooks_operation_message='Error during products import process',
                 process_response_message=pprint.pformat(product_info),log_id=log_id,fault_operation=True)
 
     def execute_process_of_quickbooks(self):
