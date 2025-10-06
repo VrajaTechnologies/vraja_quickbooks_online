@@ -38,7 +38,7 @@
         <field name="view_id" ref="view_qkb_vendor_ca_list"/>
     </record>
     <menuitem id="menu_qkca_vendor"
-              name="Vendor"
+              name="Vendors"
               parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qkca_vendor_ca_map" sequence="2"/>
 </odoo>

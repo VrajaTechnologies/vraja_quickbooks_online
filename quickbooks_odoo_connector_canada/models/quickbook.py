@@ -18,16 +18,18 @@ class QuickbooksConnect(models.Model):
     def action_qkb_product(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id('product.product_template_action')
+        action['context'] = {}
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
 
     def _compute_vendor_count(self):
         for rec in self:
-            rec.qca_vendor_count = self.env['res.partner'].search_count([('qck_instance_id', '=', rec.id)])
+            rec.qca_vendor_count = self.env['res.partner'].search_count([('qkca_vendor_ID', '!=', False)])
 
     def action_qkb_vendor(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id('account.res_partner_action_supplier')
-        action['domain'] = [('qck_instance_id', '=', self.id)]
+        action = self.env["ir.actions.actions"]._for_xml_id("account.res_partner_action_customer")
+        action['context'] = {}
+        action['domain'] = [('qkca_vendor_ID', '!=', False)]
         return action
 

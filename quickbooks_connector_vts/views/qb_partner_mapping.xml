@@ -64,12 +64,12 @@
 
 
     <menuitem id="menu_qbo_partner_map"
-              name="Partner"
+              name="Customers"
               parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_partner_map" sequence="1"/>
 
     <menuitem id="menu_qbo_account"
-              name="Account"
+              name="Accounts"
               parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qbo_account" sequence="1"/>
 

@@ -194,7 +194,7 @@ class QuickbooksWizardInherit(models.TransientModel):
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                 quickbooks_operation_name='vendor', quickbooks_operation_type='import',
                 instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                quickbooks_operation_message='Quickbooks to fetch Items')
+                quickbooks_operation_message='Quickbooks to fetch Vendors')
 
             quickbook_map_vendor = []
             quickbook_map_vendor_log_ln = []

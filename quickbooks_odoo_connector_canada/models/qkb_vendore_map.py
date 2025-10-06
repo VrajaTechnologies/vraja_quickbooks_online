@@ -8,7 +8,7 @@ class QuickbooksVendor(models.Model):
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="Quickbook Instance ID")
     quickbook_vendor_id = fields.Char(string="Vendor ID")
-    quickbook_vendor_name = fields.Char(string="vendor Name")
+    quickbook_vendor_name = fields.Char(string="Vendor Name")
     vendor_id = fields.Many2one('res.partner', string="Vendor")
     company_id = fields.Many2one('res.company', string="Company", default=lambda self: self.env.user.company_id)
     qbo_response = fields.Text(string="JSON Body")

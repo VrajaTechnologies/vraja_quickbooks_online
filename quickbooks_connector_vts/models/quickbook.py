@@ -109,7 +109,7 @@ class QuickbooksConnect(models.Model):
 
     def _compute_customer_count(self):
         for rec in self:
-            rec.qck_customer_count = self.env['res.partner'].search_count([('qck_instance_id', '=', rec.id)])
+            rec.qck_customer_count = self.env['res.partner'].search_count([('qbk_id', '!=', False)])
 
     def _compute_account_count(self):
         for rec in self:
@@ -126,18 +126,21 @@ class QuickbooksConnect(models.Model):
     def action_qck_customer(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id("account.res_partner_action_customer")
-        action['domain'] = [('qck_instance_id', '=', self.id)]
+        action['context'] = {}
+        action['domain'] = [('qbk_id', '!=', False)]
         return action
 
     def action_qck_account(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_form")
+        action['context'] = {}
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
 
     def action_qck_taxes(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id("account.action_tax_form")
+        action['context'] = {}
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
 

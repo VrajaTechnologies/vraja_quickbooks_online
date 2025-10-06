@@ -37,7 +37,7 @@
         <field name="view_mode">list</field>
     </record>
     <menuitem id="menu_qkca_product"
-              name="Product"
+              name="Products"
               parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qkca_product_map" sequence="1"/>
 </odoo>

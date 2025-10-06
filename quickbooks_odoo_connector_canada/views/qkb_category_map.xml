@@ -44,7 +44,7 @@
 
     <!-- Menu Item -->
     <menuitem id="menu_qkca_category"
-              name="Category"
+              name="Categories"
               parent="quickbooks_connector_vts.main_mapping_menu"
               action="action_qkca_category_map"
               sequence="2"/>

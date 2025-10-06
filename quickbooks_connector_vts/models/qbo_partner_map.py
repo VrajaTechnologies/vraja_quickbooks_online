@@ -10,8 +10,8 @@ class QuickbooksParnterMap(models.Model):
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect',string="Quickbook Instance ID")
     quickbook_id = fields.Char(string="Quickbook ID")
-    quick_name = fields.Char(string="Quickbook Name")
-    partner_id = fields.Many2one('res.partner',string="Odoo Customer")
+    quick_name = fields.Char(string="Customers Name")
+    partner_id = fields.Many2one('res.partner',string="Customer")
     company_id = fields.Many2one('res.company',string="Company",default=lambda self: self.env.user.company_id)
     qbo_response = fields.Text(string="JSON Body")
 
