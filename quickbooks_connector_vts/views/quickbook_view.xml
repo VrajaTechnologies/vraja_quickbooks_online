@@ -94,6 +94,8 @@
 	                                <field name="environment" readonly="state == 'connected'"/>
 	                                <field name="quickbook_base_url" readonly="state == 'connected'"/>
                                     <field name="realm_id" invisible="1"/>
+                                    <field name="auto_send_fail_transaction"/>
+                                    <field name="email_send_transaction" invisible="not auto_send_fail_transaction"/>
                             	</group>
                             </group>
                         </page>

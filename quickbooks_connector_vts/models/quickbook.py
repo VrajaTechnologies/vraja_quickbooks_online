@@ -34,6 +34,8 @@ class QuickbooksConnect(models.Model):
     qck_account_count = fields.Integer(string="Account Counts", compute='_compute_account_count')
     qck_taxes_count = fields.Integer(string="Taxes Count", compute='_compute_taxes_count')
     qbk_scope_ids = fields.Many2many('quickbooks.scope','rel_quick_connect_scope',string="Features",default=lambda self: self.env.ref('quickbooks_connector_vts.quickbooks_scope_accounting'))
+    auto_send_fail_transaction = fields.Boolean(string="Auto Send Failed Transaction Report",copy=False)
+    email_send_transaction = fields.Char(string="Email For Send Transaction",copy=False)
 
     def action_quickbook_open_instance_view_form(self):
         form_id = self.sudo().env.ref('quickbooks_connector_vts.quickbooks_connect_form_view')

@@ -9,4 +9,4 @@ from . import product_category
 from . import res_partner
 from . import qbk_invoice_map
 from . import account_move
-from . import qkb_bill_map
+# from . import qkb_bill_map
