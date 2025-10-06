@@ -7,3 +7,5 @@ from . import qkb_vendore_map
 from . import product
 from . import product_category
 from . import res_partner
+from . import qbk_invoice_map
+from . import account_move

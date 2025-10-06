@@ -10,6 +10,7 @@ class QuickbooksConnect(models.Model):
     qkca_category_creation = fields.Boolean(string="Product Category Creation",help="Enable this option to create a product category if does not exist when importing.",copy=False)
     qca_product_count = fields.Integer(string="Product Count",compute="_compute_product_count")
     qca_vendor_count = fields.Integer(string="Vendor Count",compute="_compute_vendor_count")
+    qkca_invoice_creation = fields.Boolean(string="Invoice Creation",help="Enable this option to create a invoice if does not exist when importing.",copy=False)
 
     def _compute_product_count(self):
         for rec in self:

@@ -21,6 +21,7 @@
         'views/quickbooks_view.xml',
         'views/product_termplate_view.xml',
         'views/product_category_view.xml',
+        'views/qbk_invoice_map.xml',
     ],
 
     # Author

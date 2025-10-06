@@ -5,7 +5,7 @@ import pprint
 class QuickbooksWizardInherit(models.TransientModel):
     _inherit = "quickbooks.operations"
 
-    import_operations = fields.Selection(selection_add=[("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category"),("import_ca_product", "Import Product")])
+    import_operations = fields.Selection(selection_add=[("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category"),("import_ca_product", "Import Product"),("import_invoice", "Import Invoice")])
 
     def _prepare_product_creation(self, product):
         product_type = product.get('Type')
@@ -412,6 +412,169 @@ class QuickbooksWizardInherit(models.TransientModel):
                 quickbooks_operation_message='Error during categories import process',
                 process_response_message=pprint.pformat(category_info),log_id=log_id,fault_operation=True)
 
+    def _get_taxes_from_quickbooks(self, line):
+        tax_ids = []
+        tax_ref = line.get('SalesItemLineDetail', {}).get('TaxCodeRef', {}).get('value')
+        if tax_ref:
+            tax = self.env['account.tax'].sudo().search([('qck_taxes_ID', '=', tax_ref)], limit=1)
+            if tax:
+                tax_ids.append(tax.id)
+        return tax_ids
+
+    def _prepare_invoice_creation(self, invoice, customer):
+        
+        invoice_lines = []
+        for line in invoice.get('Line', []):
+            if line.get('DetailType') == 'SalesItemLineDetail':
+                item_ref = line['SalesItemLineDetail'].get('ItemRef', {}).get('value')
+                product = self.env['product.product'].sudo().search([('qkca_product_ID', '=', item_ref)], limit=1)
+
+                if product:
+                    invoice_lines.append((0, 0, {
+                        'product_id': product.id,
+                        'name': line.get('Description', product.name),
+                        'quantity': line['SalesItemLineDetail'].get('Qty', 1),
+                        'price_unit': line['SalesItemLineDetail'].get('UnitPrice', 0),
+                        'tax_ids': [(6, 0, self._get_taxes_from_quickbooks(line))]
+                    }))
+
+        currency = None
+        currency_code = invoice.get('CurrencyRef', {}).get('value')
+        if currency_code:
+            currency = self.env['res.currency'].sudo().search([('name', '=', currency_code)], limit=1)
+
+        payment_term = None
+        term_ref = invoice.get('SalesTermRef', {}).get('value')
+        if term_ref:
+            payment_term = self.env['account.payment.term'].sudo().search([('qck_payment_terms_ID', '=', term_ref)], limit=1)
+
+        vals = {
+            'move_type': 'out_invoice',
+            'partner_id': customer.id if customer else False,
+            'invoice_date': invoice.get('TxnDate'),
+            'invoice_date_due': invoice.get('DueDate'),
+            'ref': invoice.get('DocNumber'),
+            'invoice_line_ids': invoice_lines,
+            'narration': invoice.get('CustomerMemo', {}).get('value'),
+        }
+
+        if currency:
+            vals['currency_id'] = currency.id
+        if payment_term:
+            vals['invoice_payment_term_id'] = payment_term.id
+
+        vals.update({'qkca_invoice_ID': invoice.get('Id')})
+        
+        invoice_detail = self.env['account.move'].sudo().create(vals)
+        return invoice_detail
+
+    def get_invoice_from_quickbooks(self, invoice_info, invoice_status):
+
+        if invoice_status == 200 and invoice_info and 'QueryResponse' in invoice_info:
+            invoice_items = invoice_info['QueryResponse'].get('Invoice', [])
+            instance_id = getattr(self.quickbook_instance_id, 'id', False)
+            company_id = self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id
+
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='invoice',quickbooks_operation_type='import',
+                instance=instance_id,quickbooks_operation_message='QuickBooks to fetch invoices')
+
+            quickbook_map_invoice, quickbook_map_invoice_log_ln = [], []
+
+            for invoice in invoice_items:
+                qkb_invoice_id = invoice.get('Id')
+                qkb_invoice_number = invoice.get('DocNumber')
+                qkb_customer_ref = invoice.get('CustomerRef', {}).get('value')
+
+                invoice_detail = False
+                if qkb_invoice_id:
+                    invoice_detail = self.env['account.move'].sudo().search([('move_type','=', 'out_invoice'), ('qkca_invoice_ID', '=', qkb_invoice_id)], limit=1)
+
+                customer = False
+                if qkb_customer_ref:
+                    customer = self.env['res.partner'].sudo().search([('qbk_id', '=', qkb_customer_ref)], limit=1)
+
+                if not customer:
+                    quickbook_map_invoice_log_ln.append({
+                        'quickbooks_operation_name': 'invoice','quickbooks_operation_type': 'import',
+                        'qkb_instance_id': instance_id,'quickbooks_operation_message': "Customer not found in the system. Invoice skipped.",
+                        'process_response_message': pprint.pformat(invoice),
+                        'quickbooks_operation_id': log_id.id if log_id else False,
+                        'fault_operation': True})
+                    continue
+
+                inv_created = False
+                if not invoice_detail and self.quickbook_instance_id.qkca_invoice_creation:
+                    invoice_detail = self._prepare_invoice_creation(invoice, customer)
+                    inv_created = True
+
+
+                invoice_mapping = self.env['qbo.invoice.map.vts'].sudo().search([('qbk_invoice_id', '=', qkb_invoice_id)], limit=1)
+
+                if not invoice_mapping:
+                    invoice_vals = {
+                        'quickbook_instance_id': instance_id,
+                        'qbk_invoice_id': qkb_invoice_id,
+                        'quickbook_invoice_number': qkb_invoice_number,
+                        'customer_id': customer.id if customer else False,
+                        'invoice_id': invoice_detail.id if invoice_detail else False,
+                        'company_id': company_id,
+                        'qbo_response': pprint.pformat(invoice)
+                    }
+                    quickbook_map_invoice.append(invoice_vals)
+
+                    if not invoice_detail:
+                        if inv_created:
+                            log_message = f"Invoice doesn't Created with QuickBooks Invoice: {qkb_invoice_number}"
+                        else:    
+                            log_message = f"Invoice doesn't match with QuickBooks Invoice: {qkb_invoice_number}"
+                        fault = True
+                    else:
+                        log_message = f"{'Invoice successfully created and ' if inv_created else ''}mapped with QuickBooks invoice: {qkb_invoice_number}"
+                        invoice_detail.write({
+                            'qck_instance_id': instance_id,
+                            'qkca_invoice_ID': qkb_invoice_id})
+                        fault = False
+
+                    quickbook_map_invoice_log_ln.append({
+                        'quickbooks_operation_name': 'invoice','quickbooks_operation_type': 'import',
+                        'qkb_instance_id': instance_id,'quickbooks_operation_message': log_message,
+                        'process_response_message': pprint.pformat(invoice),
+                        'quickbooks_operation_id': log_id.id if log_id else False,
+                        'fault_operation': fault})
+
+                else:
+                    invoice_mapping.sudo().write({
+                        'customer_id': customer.id if customer else False,
+                        'qbo_response': pprint.pformat(invoice),
+                        'invoice_id': getattr(invoice_detail, 'id', False),
+                        'quickbook_instance_id': instance_id,
+
+                    })
+
+                    quickbook_map_invoice_log_ln.append({
+                        'quickbooks_operation_name': 'invoice','quickbooks_operation_type': 'import',
+                        'qkb_instance_id': instance_id,'quickbooks_operation_message': f"Invoice {qkb_invoice_number} mapping updated.",
+                        'process_response_message': pprint.pformat(invoice),'quickbooks_operation_id': log_id.id if log_id else False})
+
+            if quickbook_map_invoice:
+                self.env['qbo.invoice.map.vts'].sudo().create(quickbook_map_invoice)
+            if quickbook_map_invoice_log_ln:
+                self.env['quickbooks.log.vts.line'].sudo().create(quickbook_map_invoice_log_ln)
+
+        else:
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='invoice',quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Failed to fetch invoices')
+
+            self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                quickbooks_operation_name='invoice',quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Error during invoice import process',
+                process_response_message=pprint.pformat(invoice_info),
+                log_id=log_id,fault_operation=True)
+
 
     def execute_process_of_quickbooks(self):
         res = super(QuickbooksWizardInherit, self).execute_process_of_quickbooks()
@@ -439,5 +602,11 @@ class QuickbooksWizardInherit(models.TransientModel):
                     company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
 
                 qk_category_details = self.get_category_from_quickbooks(category_info, category_status)
+
+            if self.import_operations == 'import_invoice':
+                invoice_info, invoice_status = self.env['quickbooks.api.vts'].sudo().get_data_from_quickbooks(qck_url,
+                    company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
+
+                qk_invoice_details = self.get_invoice_from_quickbooks(invoice_info, invoice_status)
 
         return res
