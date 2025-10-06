@@ -39,6 +39,28 @@
                         </li>
                     </ul>
                 </p>
+                <p style="background-color: powderblue; padding: 10px;" invisible="import_operations != 'import_vendor_bill'">
+                    <b>Notes: Import Vendor Bill Process</b>
+                    <ul>
+                        <br/>
+                        <li>Fetched Vendor Bills from QuickBooks using API with applied filter.</li>
+                        <li>
+                            <b>Date Filter :</b>
+                            Only bill created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.
+                        </li>
+                    </ul>
+                </p>
+                <p style="background-color: powderblue; padding: 10px;" invisible="import_operations != 'import_invoice'">
+                    <b>Notes: Import Invoice Process</b>
+                    <ul>
+                        <br/>
+                        <li>Fetched Invoice from QuickBooks using API with applied filter.</li>
+                        <li>
+                            <b>Date Filter :</b>
+                            Only invoice created between <span id="date-from">[Start Date]</span> and <span id="date-to">[End Date]</span> were fetched.
+                        </li>
+                    </ul>
+                </p>
             </xpath>
         </field>
     </record>

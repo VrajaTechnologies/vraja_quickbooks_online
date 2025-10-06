@@ -17,7 +17,7 @@ class QuickbooksVendor(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Quickbooks Product',
+            'name': 'Quickbooks Vendor',
             'res_model': 'qbo.vendor.ca.map.vts',
             'view_mode': 'form',
             'view_id': self.env.ref('quickbooks_odoo_connector_canada.view_qkb_vendor_ca_form').id,

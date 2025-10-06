@@ -6,12 +6,12 @@ class QuickbooksLog(models.Model):
 
     _inherit = 'quickbooks.log.vts'
 
-    quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),
+    quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),('bill','Bills'),
                                                 ('product_category','Product Category'),('invoice','Invoice')], string="Process Name")
 
 class QuickbooksLogLine(models.Model):
 
     _inherit = 'quickbooks.log.vts.line'
 
-    quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),
+    quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),('bill','Bills'),
                                                 ('product_category','Product Category'),('invoice','Invoice')], string="Process Name")

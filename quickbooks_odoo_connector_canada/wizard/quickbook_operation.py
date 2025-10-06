@@ -5,7 +5,7 @@ import pprint
 class QuickbooksWizardInherit(models.TransientModel):
     _inherit = "quickbooks.operations"
 
-    import_operations = fields.Selection(selection_add=[("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category"),("import_ca_product", "Import Product"),("import_invoice", "Import Invoice")])
+    import_operations = fields.Selection(selection_add=[("import_vendor", "Import Vendor"),("import_pro_category", "Import Product Category"),("import_ca_product", "Import Product"),("import_invoice", "Import Invoice"),('import_vendor_bill','Import Bills')])
 
     def _prepare_product_creation(self, product):
         product_type = product.get('Type')
@@ -576,6 +576,79 @@ class QuickbooksWizardInherit(models.TransientModel):
                 log_id=log_id,fault_operation=True)
 
 
+    def get_bill_from_quickbooks(self,bill_info, bill_status):
+
+        if bill_status == 200 and bill_info and 'QueryResponse' in bill_info:
+            bill_details = bill_info.get('QueryResponse').get('Bill')
+
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='bill', quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Quickbooks to fetch Bills')
+            quickbook_map_bill = []
+            quickbook_map_bill_log_ln = []
+
+            for bill in bill_details:
+                qkb_bill_name =bill.get('VendorRef').get('name')
+                qkb_bill_id =bill.get('Id', '')
+
+                bill_detail = False
+                if qkb_bill_name:
+                    bill_detail = self.env['account.move'].sudo().search(
+                        ['|', ('name', '=', qkb_bill_name), ('qkca_bill_ID', '=', qkb_bill_id)], limit=1)
+
+                bill_mapping = self.env['qbo.bill.ca.map.vts'].sudo().search(
+                    [('quickbook_bill_id', '=', qkb_bill_id)], limit=1)
+
+                if not bill_mapping:
+                    mapping_vals = {
+                        'quickbook_bill_name': qkb_bill_name,
+                        'quickbook_bill_id': qkb_bill_id,
+                        'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'bill_id': bill_detail.id if bill_detail else False,
+                        'company_id': self.quickbook_instance_id.company_id.id if self.quickbook_instance_id.company_id else self.env.company.id,
+                        'qbo_response': pprint.pformat(bill),
+                    }
+                    quickbook_map_bill.append(mapping_vals)
+
+                else:
+                    mapping_vals = {
+                        'bill_id': bill_detail.id if bill_detail else False,
+                        'qbo_response': pprint.pformat(bill),
+                    }
+                    if bill_detail and qkb_bill_id:
+                        bill_detail.qkca_bill_ID = qkb_bill_id
+                        bill_detail.qck_instance_id = self.quickbook_instance_id.id if self.quickbook_instance_id else False
+                    bill_mapping.sudo().write(mapping_vals)
+                    vendor_log_vals = {
+                        'quickbooks_operation_name': 'bill',
+                        'quickbooks_operation_type': 'import',
+                        'qkb_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                        'quickbooks_operation_message': f"Vendor bill updated with QuickBooks bill: {qkb_bill_name}",
+                        'process_response_message': pprint.pformat(bill),
+                        'quickbooks_operation_id': log_id.id if log_id else False,
+                    }
+                    quickbook_map_bill_log_ln.append(vendor_log_vals)
+
+            if quickbook_map_bill:
+                bill_mapped = self.env['qbo.bill.ca.map.vts'].sudo().create(quickbook_map_bill)
+            if quickbook_map_bill_log_ln:
+                vendor_map_logger = self.env['quickbooks.log.vts.line'].sudo().create(quickbook_map_bill_log_ln)
+        else:
+            log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
+                quickbooks_operation_name='bill',
+                quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Failed to fetch Vendor Bill'
+                )
+            log_line = self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
+                quickbooks_operation_name='bill',
+                quickbooks_operation_type='import',
+                instance=self.quickbook_instance_id.id if self.quickbook_instance_id else False,
+                quickbooks_operation_message='Error during vendor bill import process',
+                process_response_message=pprint.pformat(bill_info), log_id=log_id, fault_operation=True)
+
+
     def execute_process_of_quickbooks(self):
         res = super(QuickbooksWizardInherit, self).execute_process_of_quickbooks()
         if self.quickbook_instance_id and self.quickbook_instance_id.access_token:
@@ -608,5 +681,12 @@ class QuickbooksWizardInherit(models.TransientModel):
                     company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
 
                 qk_invoice_details = self.get_invoice_from_quickbooks(invoice_info, invoice_status)
+
+            if self.import_operations == 'import_vendor_bill':
+                    bill_info, bill_status = self.env['quickbooks.api.vts'].sudo().get_data_from_quickbooks(qck_url,
+                        company_id,token, self.import_operations, from_date=from_date, to_date=to_date)
+
+                    qk_category_details = self.get_bill_from_quickbooks(bill_info, bill_status)
+
 
         return res

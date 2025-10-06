@@ -9,7 +9,7 @@ class QuickbooksAPIVts(models.AbstractModel):
 
     def _get_operation_map(self):
         operation_map = super(QuickbooksAPIVts, self)._get_operation_map()
-        operation_map.update({'import_ca_product': 'Item','import_vendor': 'Vendor','import_pro_category': 'Item',
+        operation_map.update({'import_ca_product': 'Item','import_vendor': 'Vendor','import_vendor_bill':'Bill','import_pro_category': 'Item',
                                 'import_invoice': 'Invoice'})
         return operation_map
 
