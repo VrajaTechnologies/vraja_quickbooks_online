@@ -11,6 +11,7 @@ class QuickbooksConnect(models.Model):
     qca_product_count = fields.Integer(string="Product Count",compute="_compute_product_count")
     qca_vendor_count = fields.Integer(string="Vendor Count",compute="_compute_vendor_count")
     qkca_invoice_creation = fields.Boolean(string="Invoice Creation",help="Enable this option to create a invoice if does not exist when importing.",copy=False)
+    qkca_bill_creation = fields.Boolean(string="Bill Creation",help="Enable this option to create a bill if does not exist when importing.",copy=False)
     qca_invoice_count = fields.Integer(string="Invoice Count", compute="_compute_invoice_count")
 
     def _compute_product_count(self):
@@ -41,7 +42,7 @@ class QuickbooksConnect(models.Model):
 
     def action_qkb_invoice(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_in_invoice_type")
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
         action['context'] = {}
         action['domain'] = [('qkca_invoice_ID', '!=', False)]
         return action

@@ -7,7 +7,8 @@ class InvoiceBill(models.Model):
 
     quickbook_instance_id = fields.Many2one('quickbooks.connect', string="QuickBooks Instance")
     quickbook_bill_id = fields.Char(string="Bill ID")
-    quickbook_bill_name = fields.Char(string="Bill Name")
+    quickbook_bill_number = fields.Char(string="Bill Number")
+    partner_id = fields.Many2one('res.partner', string="Vendor")
     bill_id = fields.Many2one('account.move', string="Bill")
     company_id = fields.Many2one('res.company', string="Company", default=lambda self: self.env.user.company_id)
     qbo_response = fields.Text(string="JSON Body")

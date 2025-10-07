@@ -9,7 +9,8 @@
                     <group>
                         <field name="quickbook_instance_id" readonly="1"/>
                         <field name="quickbook_bill_id" readonly="1"/>
-                        <field name="quickbook_bill_name" readonly="1"/>
+                        <field name="quickbook_bill_number" readonly="1"/>
+                        <field name="partner_id"/>
                         <field name="bill_id"/>
                         <field name="company_id"/>
                         <field name="qbo_response" readonly="1"/>
@@ -25,7 +26,8 @@
             <list string="Quickbooks Vendor" editable="bottom">
                 <field name="quickbook_instance_id" readonly="1"/>
                 <field name="quickbook_bill_id" readonly="1"/>
-                <field name="quickbook_bill_name" readonly="1"/>
+                <field name="quickbook_bill_number" readonly="1"/>
+                <field name="partner_id"/>
                 <field name="bill_id"/>
                 <button name="vendor_bill_mapping_view" type="object" string="View" class="btn btn-link"/>
             </list>
