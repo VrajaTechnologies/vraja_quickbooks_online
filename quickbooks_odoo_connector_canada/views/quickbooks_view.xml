@@ -37,7 +37,7 @@
                 <button name="action_qkb_invoice"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-dollar">
+                        icon="fa-file-text">
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_text">Invoice</span>
                         <span class="o_stat_value">

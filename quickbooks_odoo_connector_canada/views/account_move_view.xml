@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="qk_account_move_inherit_form_view_vts" model="ir.ui.view">
+        <field name="name">qk.account.move.form.view.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position='inside'>
+                <page string="Quickbooks">
+                    <group>
+                        <field name="qck_instance_id"/>
+                        <field name="qkca_invoice_ID"/>
+                        <field name="qck_invoice_doc"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_invoice_filter" model="ir.ui.view">
+        <field name="name">invoice.filter.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='late']" position="after">
+                <separator/>
+                <filter string="Quickbook Invoices"
+                        name="quickbook_invoices"
+                        domain="[('qkca_invoice_ID', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_company']" position="after">
+                <separator/>
+                <filter string="Quickbooks Invoices" name="group_by_quickbook_invoice"
+                        context="{'group_by':'qck_instance_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
