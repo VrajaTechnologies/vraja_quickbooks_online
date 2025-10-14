@@ -24,6 +24,9 @@
         'views/qbk_invoice_map.xml',
         'views/account_move_view.xml',
         'views/account_bill_view.xml',
+        'views/qkb_customer_payment_view.xml',
+        'views/account_payment_view.xml',
+        'views/qkb_bill_payment_map_view.xml',
     ],
 
     # Author

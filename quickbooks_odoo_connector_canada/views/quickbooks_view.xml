@@ -11,6 +11,8 @@
                 <field name="qkca_category_creation"/>
                 <field name="qkca_invoice_creation"/>
                 <field name="qkca_bill_creation"/>
+                <field name="qkca_payment_creation"/>
+                <field name="qkca_bill_payment_creation"/>
             </xpath>
             <xpath expr="//sheet/div[@name='button_box']" position="inside">
                 <button name="action_qkb_product"
@@ -27,7 +29,7 @@
                 <button name="action_qkb_vendor"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-industry">
+                        icon="fa-truck ">
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_text">Vendor</span>
                         <span class="o_stat_value">
@@ -43,6 +45,39 @@
                         <span class="o_stat_text">Invoice</span>
                         <span class="o_stat_value">
                             <field name="qca_invoice_count"/>
+                        </span>
+                    </div>
+                </button>
+                <button name="action_qkb_bill"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-bank">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Bills</span>
+                        <span class="o_stat_value">
+                            <field name="qca_bill_count"/>
+                        </span>
+                    </div>
+                </button>
+                <button name="action_qkb_customer_payment"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-money">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Payment</span>
+                        <span class="o_stat_value">
+                            <field name="qca_payment_count"/>
+                        </span>
+                    </div>
+                </button>
+                <button name="action_qkb_bill_payment"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-check">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Bill Payment</span>
+                        <span class="o_stat_value">
+                            <field name="qca_billpayment_count"/>
                         </span>
                     </div>
                 </button>

@@ -13,6 +13,11 @@ class QuickbooksConnect(models.Model):
     qkca_invoice_creation = fields.Boolean(string="Invoice Creation",help="Enable this option to create a invoice if does not exist when importing.",copy=False)
     qkca_bill_creation = fields.Boolean(string="Bill Creation",help="Enable this option to create a bill if does not exist when importing.",copy=False)
     qca_invoice_count = fields.Integer(string="Invoice Count", compute="_compute_invoice_count")
+    qca_bill_count = fields.Integer(string="Bill Count",compute="_compute_bill_count")
+    qkca_payment_creation = fields.Boolean(string="Customer Payment Creation", help="Enable this option to create a customer payment if does not exist when importing",copy=False)
+    qca_payment_count =  fields.Integer(string="Customer Payment Count",compute="_compute_payment_count")
+    qkca_bill_payment_creation = fields.Boolean(string="Bill Payment Creation",help="Enable this option to create a Vendor Bill if does not exist when importing.",copy=False)
+    qca_billpayment_count = fields.Integer(string="Vendor Bill Payment Count", compute="_compute_billpayment_count")
 
     def _compute_product_count(self):
         for rec in self:
@@ -20,7 +25,7 @@ class QuickbooksConnect(models.Model):
 
     def action_qkb_product(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id('product.product_template_action')
+        action = self.env["ir.actions.actions"]._for_xml_id('sale.product_template_action')
         action['context'] = {}
         action['domain'] = [('qck_instance_id', '=', self.id)]
         return action
@@ -31,7 +36,7 @@ class QuickbooksConnect(models.Model):
 
     def action_qkb_vendor(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id("account.res_partner_action_customer")
+        action = self.env["ir.actions.actions"]._for_xml_id("account.res_partner_action_supplier")
         action['context'] = {}
         action['domain'] = [('qkca_vendor_ID', '!=', False)]
         return action
@@ -43,7 +48,39 @@ class QuickbooksConnect(models.Model):
     def action_qkb_invoice(self):
         self.ensure_one()
         action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
-        action['context'] = {}
+        # action['context'] = {}
         action['domain'] = [('qkca_invoice_ID', '!=', False)]
         return action
 
+    def _compute_bill_count(self):
+        for rec in self:
+            rec.qca_bill_count = self.env['account.move'].search_count([('qkca_bill_ID', '!=', False)])
+
+    def action_qkb_bill(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_in_invoice_type")
+        # action['context'] = {}
+        action['domain'] = [('qkca_bill_ID', '!=', False)]
+        return action
+
+    def _compute_payment_count(self):
+        for rec in self:
+            rec.qca_payment_count = self.env['account.payment'].search_count([('qkca_payment_ID', '!=', False)])
+
+    def action_qkb_customer_payment(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_payments")
+        action['context'] = {}
+        action['domain'] = [('qkca_payment_ID', '!=', False)]
+        return action
+
+    def _compute_billpayment_count(self):
+        for rec in self:
+            rec.qca_billpayment_count = self.env['account.payment'].search_count([('qkca_billpay_ID', '!=', False)])
+
+    def action_qkb_bill_payment(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_account_payments_payable")
+        action['context'] = {}
+        action['domain'] = [('qkca_billpay_ID', '!=', False)]
+        return action

@@ -10,3 +10,6 @@ from . import res_partner
 from . import qbk_invoice_map
 from . import account_move
 from . import qkb_bill_map
+from . import qkb_customer_payment
+from . import account_payment
+from . import qkb_bill_payment_map
