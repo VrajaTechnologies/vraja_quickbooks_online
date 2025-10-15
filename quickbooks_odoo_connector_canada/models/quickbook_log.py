@@ -8,7 +8,7 @@ class QuickbooksLog(models.Model):
 
     quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),('bill','Bills'),
                                                 ('product_category','Product Category'),('invoice','Invoice'),
-                                                ('customer_payment', 'Payment'),('billpayment','Bill Payment')], string="Process Name")
+                                                ('customer_payment', 'Payment'),('billpayment','Bill Payment'),('payment_term','Payment Term'),('chart_of_account','Chart Of Accounts')], string="Process Name")
 
 class QuickbooksLogLine(models.Model):
 
@@ -16,4 +16,4 @@ class QuickbooksLogLine(models.Model):
 
     quickbooks_operation_name = fields.Selection(selection_add=[('vendor', 'Vendor'),('product','Product'),('bill','Bills'),
                                                 ('product_category','Product Category'),('invoice','Invoice'),
-                                                ('customer_payment', 'Payment'),('billpayment','Bill Payment')], string="Process Name")
+                                                ('customer_payment', 'Payment'),('billpayment','Bill Payment'),('payment_term','Payment Term'),('chart_of_account','Accounts')], string="Process Name")

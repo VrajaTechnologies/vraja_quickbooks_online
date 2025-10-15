@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="server_action_export_customer_and_vendor_qb" model="ir.actions.server">
+            <field name="name">Export Customers &amp; Vendors to QuickBooks</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="binding_model_id" ref="base.model_res_partner"/>
+            <field name="state">code</field>
+            <field name="code">records.export_customer_and_vendor_to_quickbooks()</field>
+        </record>
+        <record id="server_action_export_payment_term_qb" model="ir.actions.server">
+            <field name="name">Export Payment Term to QuickBooks</field>
+            <field name="model_id" ref="account.model_account_payment_term"/>
+            <field name="binding_model_id" ref="account.model_account_payment_term"/>
+            <field name="state">code</field>
+            <field name="code">records.export_payment_term_to_qbk()</field>
+        </record>
+        <record id="server_action_export_chart_of_account_qb" model="ir.actions.server">
+            <field name="name">Export Chart of Accounts to QuickBooks</field>
+            <field name="model_id" ref="account.model_account_account"/>
+            <field name="binding_model_id" ref="account.model_account_account"/>
+            <field name="state">code</field>
+            <field name="code">records.export_account_to_qbk()</field>
+        </record>
+    </data>
+</odoo>

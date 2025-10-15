@@ -14,6 +14,7 @@
     'data': [
         'security/ir.model.access.csv',
         'wizard/quickbook_operation_view.xml',
+        'data/quickbook_server_action.xml',
         'views/qkb_product_map_view.xml',
         'views/qkb_vendor_map_view.xml',
         'views/qkb_category_map.xml',

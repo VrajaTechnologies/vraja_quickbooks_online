@@ -13,3 +13,5 @@ from . import qkb_bill_map
 from . import qkb_customer_payment
 from . import account_payment
 from . import qkb_bill_payment_map
+from . import account_payment_term
+from . import account

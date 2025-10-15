@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+import json
+import xmltodict
+from xmltodict import ParsingInterrupted
+
 
 class QuickbooksConnect(models.Model):
 
@@ -84,3 +88,19 @@ class QuickbooksConnect(models.Model):
         action['context'] = {}
         action['domain'] = [('qkca_billpay_ID', '!=', False)]
         return action
+
+
+    @api.model
+    def convert_response_xmltodict(self, response):
+        try:
+            if type(response) != dict:
+                order_dict = xmltodict.parse(response)
+            else:
+                order_dict = response
+        except ParsingInterrupted as e:
+            _logger.error(e)
+            raise e
+
+        response_dict = json.loads(json.dumps(order_dict))
+        return response_dict
+
