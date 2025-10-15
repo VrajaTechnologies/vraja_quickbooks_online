@@ -712,13 +712,13 @@ class QuickbooksWizardInherit(models.TransientModel):
                     if bill_detail:
                         log_message = (
                             f"Bill successfully {'created and ' if bill_created else ''}"
-                            f"mapped with QuickBooks Bill: {bill.get('DocNumber')}"
+                            f"mapped with QuickBooks Bill: {qkb_bill_id}"
                         )
                         fault = False
                     else:
                         log_message = (
                             f"Bill {'creation failed for' if bill_created else 'not found or mismatched with'} "
-                            f"QuickBooks Bill: {bill.get('DocNumber')}"
+                            f"QuickBooks Bill: {qkb_bill_id}"
                         )
                         fault = True
 
@@ -745,7 +745,7 @@ class QuickbooksWizardInherit(models.TransientModel):
                         'quickbooks_operation_name': 'bill',
                         'quickbooks_operation_type': 'import',
                         'qkb_instance_id': instance_id,
-                        'quickbooks_operation_message': f"Vendor bill updated with QuickBooks bill: {bill.get('DocNumber')}",
+                        'quickbooks_operation_message': f"Vendor bill updated with QuickBooks bill: {qkb_bill_id}",
                         'process_response_message': pprint.pformat(bill),
                         'quickbooks_operation_id': log_id.id if log_id else False,
                     }
