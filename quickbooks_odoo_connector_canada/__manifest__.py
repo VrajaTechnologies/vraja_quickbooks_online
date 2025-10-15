@@ -3,12 +3,12 @@
     # App information
     'name': 'Quickbooks Odoo Connector Canada',
     'category': 'Website',
-    'version': '18.0.0.0.1',
+    'version': '18.0.1.0.0',
     'summary': """Quickbooks Odoo Connector Canada""",
     'license': 'OPL-1',
 
     # Dependencies
-    'depends': ["quickbooks_connector_vts", "stock"],
+    'depends': ["sale", "quickbooks_connector_vts", "stock"],
 
     # Views
     'data': [
