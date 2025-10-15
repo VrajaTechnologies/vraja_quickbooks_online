@@ -646,6 +646,11 @@ class QuickbooksWizardInherit(models.TransientModel):
             'ref': bill.get('DocNumber'),
             'invoice_line_ids': line_vals,
         }
+        currency_code = bill.get('CurrencyRef', {}).get('value')
+        if currency_code:
+            currency = self.env['res.currency'].sudo().search([('name', '=', currency_code)], limit=1)
+            vals['currency_id'] = currency.id
+
         bill_detail = self.env['account.move'].sudo().create(vals)
 
         return bill_detail
@@ -654,7 +659,7 @@ class QuickbooksWizardInherit(models.TransientModel):
 
         if bill_status == 200 and bill_info and 'QueryResponse' in bill_info:
             instance_id = getattr(self.quickbook_instance_id, 'id', False)
-            bill_items = bill_info.get('QueryResponse').get('Bill')
+            bill_items = bill_info.get('QueryResponse', {}).get('Bill', [])
 
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                 quickbooks_operation_name='bill', quickbooks_operation_type='import',
@@ -797,7 +802,8 @@ class QuickbooksWizardInherit(models.TransientModel):
     def get_customer_payment_from_quickbooks(self, payment_info, payment_status):
 
         if payment_status == 200 and payment_info and 'QueryResponse' in payment_info:
-            payment_items = payment_info.get('QueryResponse').get('Payment')
+
+            payment_items = payment_info.get('QueryResponse', {}).get('Payment', [])
 
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                 quickbooks_operation_name='customer_payment', quickbooks_operation_type='import',
@@ -812,17 +818,11 @@ class QuickbooksWizardInherit(models.TransientModel):
 
                 payment_detail = False
                 if qkb_payment_id:
-                    payment_detail = self.env['account.payment'].sudo().search(
-                        [('qkca_payment_ID', '=', qkb_payment_id)], limit=1)
+                    payment_detail = self.env['account.payment'].sudo().search([('qkca_payment_ID', '=', qkb_payment_id)], limit=1)
 
                 customer = False
                 if qkb_customer_ref:
                     customer = self.env['res.partner'].sudo().search([('qbk_id', '=', qkb_customer_ref)], limit=1)
-
-                payment_created = False
-                if not payment_detail and self.quickbook_instance_id.qkca_payment_creation and customer:
-                    payment_detail  = self._prepare_payment_creation(payment, customer)
-                    payment_created = True
 
                 if not customer:
                     quickbook_map_payment_log_ln.append({
@@ -833,9 +833,14 @@ class QuickbooksWizardInherit(models.TransientModel):
                         'quickbooks_operation_id': log_id.id if log_id else False,
                         'fault_operation': True})
 
-                payment_mapping = self.env['qbo.payment.ca.map.vts'].sudo().search(
-                    [('quickbook_cust_payment_id', '=', qkb_payment_id)],
-                    limit=1)
+                payment_created = False
+                if not payment_detail and self.quickbook_instance_id.qkca_payment_creation and customer:
+                    payment_detail  = self._prepare_payment_creation(payment, customer)
+                    payment_created = True
+
+
+                payment_mapping = self.env['qbo.payment.ca.map.vts'].sudo().search([('quickbook_cust_payment_id', '=', qkb_payment_id)],limit=1)
+
                 if not payment_mapping:
                     mapping_vals = {
                         'quickbook_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
@@ -850,16 +855,13 @@ class QuickbooksWizardInherit(models.TransientModel):
                         log_message = (
                             f"Customer Payment Successfully {'Created' if payment_created else ''}"
                         )
-                        payment_detail.sudo().write({
-                            'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'qkca_payment_ID': qkb_payment_id,
-                        })
                         fault = False
                     else:
                         log_message = (
                             f"Payment {'creation failed for' if payment_created else 'not found or mismatched '} "
                         )
                         fault = True
+
                     quickbook_map_payment_log_ln.append({
                         'quickbooks_operation_name': 'customer_payment',
                         'quickbooks_operation_type': 'import',
@@ -943,7 +945,7 @@ class QuickbooksWizardInherit(models.TransientModel):
     def get_billpayment_from_quickbooks(self, billpayment_info, billpayment_status):
 
         if billpayment_status == 200 and billpayment_info and 'QueryResponse' in billpayment_info:
-            billpayment_details = billpayment_info.get('QueryResponse').get('BillPayment')
+            billpayment_items = billpayment_info.get('QueryResponse').get('BillPayment', [])
 
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(
                 quickbooks_operation_name='billpayment', quickbooks_operation_type='import',
@@ -952,7 +954,8 @@ class QuickbooksWizardInherit(models.TransientModel):
 
             quickbook_map_billpayment, quickbook_map_billpayment_log_ln = [], []
 
-            for bill in billpayment_details:
+            for bill in billpayment_items:
+
                 qbk_vendor_ref = bill.get('VendorRef').get('value')
                 qbk_bill_id = bill.get('Id', '')
 
@@ -964,11 +967,6 @@ class QuickbooksWizardInherit(models.TransientModel):
                 if qbk_vendor_ref:
                     vendor = self.env['res.partner'].sudo().search([('qkca_vendor_ID', '=', qbk_vendor_ref)], limit=1)
 
-                billpayment_created = False
-                if not billpayment_detail and self.quickbook_instance_id.qkca_bill_payment_creation and vendor:
-                    billpayment_detail = self._prepare_billpayment_creation(bill, vendor)
-                    billpayment_created = True
-
                 if not vendor:
                     quickbook_map_billpayment_log_ln.append({
                         'quickbooks_operation_name': 'billpayment', 'quickbooks_operation_type': 'import',
@@ -977,6 +975,12 @@ class QuickbooksWizardInherit(models.TransientModel):
                         'process_response_message': pprint.pformat(bill),
                         'quickbooks_operation_id': log_id.id if log_id else False,
                         'fault_operation': True})
+
+                billpayment_created = False
+                if not billpayment_detail and self.quickbook_instance_id.qkca_bill_payment_creation and vendor:
+                    billpayment_detail = self._prepare_billpayment_creation(bill, vendor)
+                    billpayment_created = True
+
 
                 billpayment_mapping = self.env['qbo.bill.payment.ca.map.vts'].sudo().search(
                     [('quickbook_bill_payment_id', '=', qbk_bill_id)], limit=1)
@@ -999,10 +1003,6 @@ class QuickbooksWizardInherit(models.TransientModel):
                             f"mapped with QuickBooks Bill Payment: {bill.get('DocNumber')}"
                         )
                         fault = False
-                        billpayment_detail.sudo().write({
-                            'qck_instance_id': self.quickbook_instance_id.id if self.quickbook_instance_id else False,
-                            'qkca_billpay_ID': qbk_bill_id,
-                        })
                     else:
                         log_message = (
                             f"Bill Payment {'creation failed for' if billpayment_created else 'not found or mismatched with'} "
