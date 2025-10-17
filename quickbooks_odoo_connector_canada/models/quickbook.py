@@ -22,6 +22,7 @@ class QuickbooksConnect(models.Model):
     qca_payment_count =  fields.Integer(string="Customer Payment Count",compute="_compute_payment_count")
     qkca_bill_payment_creation = fields.Boolean(string="Bill Payment Creation",help="Enable this option to create a Vendor Bill if does not exist when importing.",copy=False)
     qca_billpayment_count = fields.Integer(string="Vendor Bill Payment Count", compute="_compute_billpayment_count")
+    company_included_tax = fields.Boolean(string="Send Invoice Tax Included", copy=False)
 
     def _compute_product_count(self):
         for rec in self:

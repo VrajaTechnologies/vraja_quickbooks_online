@@ -7,12 +7,12 @@ class Partner(models.Model):
 
     qkca_vendor_ID = fields.Char(string="Quickbook Vendor ID",copy=False)
     qkca_vendor_type = fields.Char(string="Quickbook Vendor Type",copy=False)
-    error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
-    is_customer_exported = fields.Boolean(string="Exported Customer", default=False)
-    is_vendor_exported = fields.Boolean(string="Exported Customer", default=False)
+    is_export_error = fields.Boolean("Error in QuickBooks Export", default=False)
+    is_customer_qkca_exported = fields.Boolean(string="Exported Customer", default=False)
+    is_vendor_qkca_exported = fields.Boolean(string="Exported Customer", default=False)
 
 
-    def export_customer_and_vendor_to_quickbooks(self):
+    def export_customer_and_vendor_to_qkca(self):
         for partner in self:
             roles = []
             if partner.customer_rank > 0:
@@ -32,10 +32,10 @@ class Partner(models.Model):
                     partner.message_post(body=msg_body)
                     continue
 
-                self.export_to_quickbooks(partner, endpoint, qbk_field)
+                self.export_to_quickbooks_ca(partner, endpoint, qbk_field)
 
 
-    def export_to_quickbooks(self, partner, endpoint, qbk_field):
+    def export_to_quickbooks_ca(self, partner, endpoint, qbk_field):
         company = partner.company_id.id if partner.company_id else self.env.company.id
         quickbook_instance = self.env['quickbooks.connect'].sudo().search(
             [('state', '=', 'connected'), ('company_id', '=', company)], limit=1)
@@ -85,10 +85,10 @@ class Partner(models.Model):
 
                     setattr(partner, qbk_field, qbk_id)
                     if qbk_field == 'qbk_id':
-                        partner.is_customer_exported = True
+                        partner.is_customer_qkca_exported = True
                     elif qbk_field == 'qkca_vendor_ID':
-                        partner.is_vendor_exported = True
-                    partner.error_in_export = False
+                        partner.is_vendor_qkca_exported = True
+                    partner.is_export_error = False
                     partner.message_post(body=f"Exported {partner.name} to QuickBooks as {endpoint}, ID: {qbk_id}")
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                         quickbooks_operation_name=endpoint,
@@ -97,7 +97,7 @@ class Partner(models.Model):
                         process_response_message=response_json, log_id=log_id)
                     return qbk_id
                 else:
-                    partner.error_in_export = True
+                    partner.is_export_error = True
                     error_msg = response_json
                     if response_json.get('IntuitResponse'):
                         error_msg = response_json['IntuitResponse']['Fault']['Error']['Message']
@@ -110,7 +110,7 @@ class Partner(models.Model):
                         process_response_message=response_json, log_id=log_id, fault_operation=True)
                     return f"Failed to export {partner.name} to QuickBooks ({endpoint}). Response: {error_msg}"
             except Exception as e:
-                partner.error_in_export = True
+                partner.is_export_error = True
                 partner.message_post(body=f"Exception while exporting {partner.name} to QuickBooks: {str(e)}")
                 self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                     quickbooks_operation_name=endpoint, quickbooks_operation_type="export",

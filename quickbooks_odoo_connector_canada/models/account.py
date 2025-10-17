@@ -4,10 +4,10 @@ from odoo import models, fields, api
 class Account(models.Model):
     _inherit = "account.account"
 
-    error_in_export = fields.Boolean("Error in QuickBooks Export", default=False)
-    is_account_exported = fields.Boolean(string="Exported Chart of Account", default=False)
+    is_export_error = fields.Boolean("Error in QuickBooks Export", default=False)
+    is_account_qbca_exported = fields.Boolean(string="Exported Chart of Account", default=False)
 
-    def prepare_account_payload(self,account):
+    def _prepare_qkca_account_vals(self,account):
         print('Yaxit')
         account_type_map = {
             'asset_receivable':'Accounts Receivable',
@@ -38,10 +38,18 @@ class Account(models.Model):
         if account.qk_accountsubType:
             account_payload['AccountSubType'] = account.qk_accountsubType
 
+        if account.tax_ids:
+            tax = account.tax_ids[0]
+            if tax.qck_taxes_ID:
+                account_payload["TaxCodeRef"] = {
+                    "value": tax.qck_taxes_ID,
+                    "name": tax.name,
+                }
+
         return account_payload, 'account'
 
 
-    def export_account_to_qbk(self):
+    def export_account_to_quickbook_ca(self):
         for account in self:
             if account.quickbooks_id:
                 account.message_post(body=f"Account already exported to QuickBooks with ID {account.quickbooks_id}.")
@@ -59,7 +67,7 @@ class Account(models.Model):
                 instance=quickbook_instance.id,quickbooks_operation_message=f"Starting export for Payment Term {account.name}"
             )
 
-            account_payload, endpoint = self.prepare_account_payload(account)
+            account_payload, endpoint = self._prepare_qkca_account_vals(account)
 
             try:
                 account_url = f"{quickbook_instance.quickbook_base_url}/{quickbook_instance.realm_id}/{endpoint}"
@@ -71,8 +79,8 @@ class Account(models.Model):
                     account_data = response_json.get("Account", {})
                     qk_account_id = account_data.get("Id")
                     account.quickbooks_id = qk_account_id
-                    account.error_in_export = False
-                    account.is_account_exported = True
+                    account.is_export_error = False
+                    account.is_account_qbca_exported = True
                     account.message_post(body=f"Exported Payment {account.name} to QuickBooks, ID: {qk_account_id}")
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                         quickbooks_operation_name="chart_of_account", quickbooks_operation_type="export",
@@ -84,7 +92,7 @@ class Account(models.Model):
                 else:
                     msg = f"Failed to export Payment {account.name} to QuickBooks. Response: {response_json}"
                     account.message_post(body=msg)
-                    account.error_in_export = True
+                    account.is_export_error = True
                     self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                         quickbooks_operation_name="chart_of_account", quickbooks_operation_type="export",
                         instance=quickbook_instance.id, quickbooks_operation_message=msg,
@@ -94,7 +102,7 @@ class Account(models.Model):
 
             except Exception as e:
                 account.message_post(body=f"Exception while exporting Payment {account.name} to QuickBooks: {str(e)}")
-                account.error_in_export = True
+                account.is_export_error = True
                 self.env['quickbooks.log.vts.line'].sudo().generate_quickbooks_process_line(
                     quickbooks_operation_name="chart_of_account", quickbooks_operation_type="export",
                     instance=quickbook_instance.id, quickbooks_operation_message=f"Exception: {str(e)}",
