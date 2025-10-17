@@ -16,8 +16,7 @@ class QuickbooksLog(models.Model):
                                               string="Process Name")
     quickbooks_operation_type = fields.Selection(selection=[('export', 'Export'),('import', 'Import')], string="Process Type")
     company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.user.company_id)
-    qkb_instance_id = fields.Many2one('quickbooks.connect', string='Quickbooks Instance',
-                                  help='Select Instance Id')
+    qkb_instance_id = fields.Many2one('quickbooks.connect', string='Quickbooks Instance',help='Select Instance Id')
     quickbooks_operation_line_ids = fields.One2many("quickbooks.log.vts.line", "quickbooks_operation_id",
                                                  string="Operation",ondelete='cascade')
     quickbooks_operation_message = fields.Char(string="Message")
@@ -36,8 +35,7 @@ class QuickbooksLog(models.Model):
                 vals.update({'name': name, 'company_id': company_id})
         return super(QuickbooksLog, self).create(vals_list)
 
-    def generate_quickbooks_logs(self, quickbooks_operation_name, quickbooks_operation_type, instance,
-                              quickbooks_operation_message):
+    def generate_quickbooks_logs(self, quickbooks_operation_name, quickbooks_operation_type, instance=None, quickbooks_operation_message=None):
         """
         From this method quickbooks log's record will create.
         """
@@ -84,9 +82,9 @@ class QuickbooksLogLine(models.Model):
                 vals.update({'company_id': company_id})
         return super(QuickbooksLogLine, self).create(vals_list)
 
-    def generate_quickbooks_process_line(self, quickbooks_operation_name, quickbooks_operation_type, instance,
-                                      quickbooks_operation_message, process_request_message, process_response_message,
-                                      log_id, fault_operation=False):
+    def generate_quickbooks_process_line(self, quickbooks_operation_name, quickbooks_operation_type, instance=None,
+                                      quickbooks_operation_message=None, process_request_message=None, process_response_message=None,
+                                      log_id=None, fault_operation=False):
         """
         From this method quickbooks log line's record will create.
         """

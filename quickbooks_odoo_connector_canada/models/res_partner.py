@@ -7,10 +7,9 @@ class Partner(models.Model):
 
     qkca_vendor_ID = fields.Char(string="Quickbook Vendor ID",copy=False)
     qkca_vendor_type = fields.Char(string="Quickbook Vendor Type",copy=False)
-    is_export_error = fields.Boolean("Error in QuickBooks Export", default=False)
-    is_customer_qkca_exported = fields.Boolean(string="Exported Customer", default=False)
-    is_vendor_qkca_exported = fields.Boolean(string="Exported Customer", default=False)
-
+    is_export_error = fields.Boolean("Error in QuickBooks Export", default=False,copy=False)
+    is_customer_qkca_exported = fields.Boolean(string="Exported Customer", default=False, copy=False)
+    is_vendor_qkca_exported = fields.Boolean(string="Exported Vendor", default=False,copy=False)
 
     def export_customer_and_vendor_to_qkca(self):
         for partner in self:
@@ -21,8 +20,12 @@ class Partner(models.Model):
                 roles.append(("vendor", "qkca_vendor_ID"))
 
             if not roles:
-                partner.message_post(body=f"{partner.name} is neither customer nor vendor.")
-                continue
+                if partner.qbk_id:
+                    msg_body = f"{partner.name} already exists in QuickBooks as {endpoint} with ID: {existing_id}."
+                    partner.message_post(body=msg_body)
+                    continue
+
+                self.export_to_quickbooks_ca(partner, 'customer', 'qbk_id')
 
             for endpoint, qbk_field in roles:
                 existing_id = getattr(partner, qbk_field)
@@ -37,8 +40,7 @@ class Partner(models.Model):
 
     def export_to_quickbooks_ca(self, partner, endpoint, qbk_field):
         company = partner.company_id.id if partner.company_id else self.env.company.id
-        quickbook_instance = self.env['quickbooks.connect'].sudo().search(
-            [('state', '=', 'connected'), ('company_id', '=', company)], limit=1)
+        quickbook_instance = self.env['quickbooks.connect'].sudo().search([('state', '=', 'connected'), ('company_id', '=', company)], limit=1)
 
         if quickbook_instance:
             log_id = self.env['quickbooks.log.vts'].sudo().generate_quickbooks_logs(quickbooks_operation_name=endpoint,
@@ -84,6 +86,7 @@ class Partner(models.Model):
                     qbk_id = customer_data.get("Id")
 
                     setattr(partner, qbk_field, qbk_id)
+                    partner.qck_instance_id = quickbook_instance.id
                     if qbk_field == 'qbk_id':
                         partner.is_customer_qkca_exported = True
                     elif qbk_field == 'qkca_vendor_ID':

@@ -8,43 +8,33 @@ class Account(models.Model):
     is_account_qbca_exported = fields.Boolean(string="Exported Chart of Account", default=False)
 
     def _prepare_qkca_account_vals(self,account):
-        print('Yaxit')
         account_type_map = {
-            'asset_receivable':'Accounts Receivable',
-            'liability_payable':'Accounts Payable',
-            'asset_cash':'Bank',
-            'expense_direct_cost': 'Cost of Goods Sold',
-            'income':'Income',
-            'income_other':'Other Income' ,
-            'expense':'Expense' ,
+            'asset_cash': 'Bank',
             'asset_current': 'Other Current Asset',
-            'liability_current': 'Other Current Liability',
-            'asset_non_current': 'Fixed Asset',
+            'asset_fixed': 'Fixed Asset',
+            'asset_receivable': 'Accounts Receivable',
+            'equity': 'Equity',
+            'expense': 'Expense',
+            'expense_direct_cost': 'Cost of Goods Sold',
+            'liability_payable': 'Accounts Payable',
             'liability_credit_card': 'Credit Card',
             'liability_non_current': 'Long Term Liability',
-            'equity': 'Equity',
+            'liability_current': 'Other Current Liability',
+            'income': 'Income',
+            'income_other': 'Other Income',
         }
         odoo_account_type = account_type_map.get(account.account_type)
         account_payload ={
             "Name": account.name,
             "AccountType": odoo_account_type,
             "AcctNum": account.code,
-            "CurrencyRef": {
-                "value": account.company_ids.currency_id.name
-            }
+            "CurrencyRef": {"value": account.company_ids.currency_id.name}
         }
-        if account.qk_classification:
-            account_payload['Classification'] = account.qk_classification
-        if account.qk_accountsubType:
-            account_payload['AccountSubType'] = account.qk_accountsubType
 
         if account.tax_ids:
             tax = account.tax_ids[0]
             if tax.qck_taxes_ID:
-                account_payload["TaxCodeRef"] = {
-                    "value": tax.qck_taxes_ID,
-                    "name": tax.name,
-                }
+                account_payload["TaxCodeRef"] = {"value": tax.qck_taxes_ID,"name": tax.name,}
 
         return account_payload, 'account'
 
@@ -79,6 +69,9 @@ class Account(models.Model):
                     account_data = response_json.get("Account", {})
                     qk_account_id = account_data.get("Id")
                     account.quickbooks_id = qk_account_id
+                    account.qk_classification = account_data.get("Classification", '')
+                    account.qk_accountsubType = account_data.get("AccountSubType", '')
+                    account.qck_instance_id = quickbook_instance.id
                     account.is_export_error = False
                     account.is_account_qbca_exported = True
                     account.message_post(body=f"Exported Payment {account.name} to QuickBooks, ID: {qk_account_id}")
